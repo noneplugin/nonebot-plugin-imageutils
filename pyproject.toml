@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "nonebot_plugin_imageutils"
+version = "0.1.0"
+description = "Nonebot2 PIL工具插件"
+authors = ["meetwq <meetwq@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/noneplugin/nonebot-plugin-imageutils"
+repository = "https://github.com/noneplugin/nonebot-plugin-imageutils"
+
+[tool.poetry.dependencies]
+python = "^3.7.3"
+nonebot2 = "^2.0.0-beta.1"
+fonttools = "^4.0.0"
+Pillow = "^9.0.0"
+
+[tool.poetry.dev-dependencies]
+nb-cli = "^0.6.0"
+black = "^22.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

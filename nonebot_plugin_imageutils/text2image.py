@@ -323,9 +323,9 @@ class Text2Image:
     def height(self) -> int:
         if not self.lines:
             return 0
-        return sum([line.height for line in self.lines]) + self.spacing * (
-            len(self.lines) - 1
-        )
+        return sum(
+            [line.ascent + line.descent for line in self.lines]
+        ) + self.spacing * (len(self.lines) - 1)
 
     def wrap(self, width: float) -> "Text2Image":
         new_lines: List[Line] = []
@@ -356,7 +356,7 @@ class Text2Image:
                 y = top + line.ascent - char.ascent
                 char.draw_on(img, (int(x), int(y)))
                 x += char.width
-            top += line.height + self.spacing
+            top += line.ascent + line.descent + self.spacing
 
         return img
 

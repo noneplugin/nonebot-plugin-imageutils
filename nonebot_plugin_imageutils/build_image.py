@@ -31,9 +31,9 @@ class BuildImage:
 
     @classmethod
     def new(
-        cls, size: SizeType, mode: ModeType = "RGBA", color: ColorType = "white"
+        cls, size: SizeType, mode: ModeType = "RGBA", color: Optional[ColorType] = None
     ) -> "BuildImage":
-        return cls(Image.new(mode, size, color))
+        return cls(Image.new(mode, size, color))  # type: ignore
 
     @classmethod
     def open(cls, file: Union[str, bytes, BytesIO, Path]) -> "BuildImage":
@@ -130,7 +130,7 @@ class BuildImage:
         """将图片裁剪为圆形"""
         self.square()
         mask = Image.new("L", self.size, 0)
-        self.draw.ellipse((1, 1, self.size[0] - 2, self.size[1] - 2), fill=255)
+        self.draw.ellipse((1, 1, self.size[0] - 2, self.size[1] - 2), "white")
         mask = mask.filter(ImageFilter.GaussianBlur(0))
         self.image.putalpha(mask)
         return self
@@ -334,7 +334,7 @@ class BuildImage:
                 self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
                 return self
 
-    def save(self, format: Optional[str] = None, **params) -> BytesIO:
+    def save(self, format: str, **params) -> BytesIO:
         output = BytesIO()
         self.image.save(output, format, **params)
         return output

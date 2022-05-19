@@ -60,7 +60,7 @@ output = BuildImage.new((300, 300)).circle().draw_text((30, 30, 270, 270), "测�
 from nonebot_plugin_imageutils import Text2Image
 
 # img: PIL.Image.Image
-image = Text2Image.from_text("@mnixry 🤗", 50).to_image()
+img = Text2Image.from_text("@mnixry 🤗", 50).to_image()
 ```
 
 ![2.png](https://s2.loli.net/2022/05/19/14EXViZQwcGUW5I.png)

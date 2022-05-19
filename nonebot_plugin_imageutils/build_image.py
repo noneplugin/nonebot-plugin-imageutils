@@ -5,7 +5,7 @@ from typing import List, Union, Optional
 from PIL import Image, ImageDraw, ImageFilter
 
 from .types import *
-from .text import Text
+from .text2image import Text2Image
 
 
 class BuildImage:
@@ -263,7 +263,7 @@ class BuildImage:
         lines_align: HAlignType = "left",
         stroke_ratio: float = 0,
         stroke_fill: Optional[ColorType] = None,
-        fontname: Optional[str] = None,
+        fontname: str = "",
         fallback_fonts: List[str] = [],
     ) -> "BuildImage":
         """
@@ -292,7 +292,7 @@ class BuildImage:
         height = xy[3] - xy[1]
         fontsize = max_fontsize
         while True:
-            build_text = Text(
+            text2img = Text2Image.from_text(
                 text,
                 fontsize,
                 bold,
@@ -304,12 +304,12 @@ class BuildImage:
                 fontname,
                 fallback_fonts,
             )
-            text_w = build_text.width
-            text_h = build_text.height
+            text_w = text2img.width
+            text_h = text2img.height
             if text_w > width:
-                build_text.wrap(width)
-                text_w = build_text.width
-                text_h = build_text.height
+                text2img.wrap(width)
+                text_w = text2img.width
+                text_h = text2img.height
             if text_h > height:
                 fontsize -= 1
                 if fontsize < min_fontsize:
@@ -327,5 +327,5 @@ class BuildImage:
                 elif valign == "bottom":
                     y += height - text_h
 
-                self.paste(build_text.to_image(), (int(x), int(y)), alpha=True)
+                self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
                 return self

@@ -22,18 +22,18 @@ SPECIAL_FONTSIZES = {"AppleColorEmoji.ttf": 137, "NotoColorEmoji.ttf": 109}
 
 def local_fonts() -> Iterator[str]:
     for f in FONT_PATH.iterdir():
-        if f.is_file() and f.suffix in [".otf", ".ttf"]:
+        if f.is_file() and f.suffix in [".otf", ".ttf", ".ttc", ".fnt"]:
             yield f.name
 
 
 class Font:
     def __init__(self, fontname: str, fontpath: Path, valid_size: Optional[int] = None):
-        self.fontname = fontname
-        self.fontpath = fontpath.resolve()
+        self.name = fontname
+        self.path = fontpath.resolve()
         self.valid_size = valid_size
         """某些字体不支持缩放，只能以特定的大小加载"""
         self._glyph_table: Set[int] = set()
-        for table in TTFont(self.fontpath)["cmap"].tables:  # type: ignore
+        for table in TTFont(self.path, fontNumber=0)["cmap"].tables:  # type: ignore
             for key in table.cmap.keys():
                 self._glyph_table.add(key)
 
@@ -57,7 +57,7 @@ class Font:
 
     def load_font(self, fontsize: int) -> FreeTypeFont:
         """以指定大小加载字体"""
-        return ImageFont.truetype(str(self.fontpath), fontsize, encoding="utf-8")
+        return ImageFont.truetype(str(self.path), fontsize, encoding="utf-8")
 
     def has_char(self, char: str) -> bool:
         """检查字体是否支持某个字符"""

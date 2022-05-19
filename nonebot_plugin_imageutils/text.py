@@ -40,7 +40,7 @@ class Char:
             self.width *= ratio
             self.height *= ratio
 
-    def draw_on(self, img: IMG, pos: PosType):
+    def draw_on(self, img: IMG, pos: ImgPosType):
         if self.font.valid_size:
             ratio = self.font.valid_size / self.fontsize
             new_img = Image.new(
@@ -57,7 +57,7 @@ class Char:
                 embedded_color=True,
             )
             new_img = new_img.resize(
-                (self.width, self.height), resample=Image.ANTIALIAS
+                (int(self.width), int(self.height)), resample=Image.ANTIALIAS
             )
             img.paste(new_img, pos, mask=new_img)
         else:
@@ -69,6 +69,7 @@ class Char:
                 fill=self.fill,
                 stroke_width=self.stroke_width,
                 stroke_fill=self.stroke_fill,
+                embedded_color=True,
             )
 
 
@@ -79,26 +80,34 @@ class Line:
 
     @property
     def width(self) -> int:
+        if not self.chars:
+            return 0
         return sum([char.width for char in self.chars])
 
     @property
     def height(self) -> int:
-        return max([char.width for char in self.chars])
+        if not self.chars:
+            return 0
+        return max([char.height for char in self.chars])
 
     @property
     def ascent(self) -> int:
+        if not self.chars:
+            return 0
         return max([char.ascent for char in self.chars])
 
     @property
     def descent(self) -> int:
+        if not self.chars:
+            return 0
         return max([char.descent for char in self.chars])
 
     def wrap(self, width: float) -> Iterator["Line"]:
         last_idx = 0
-        for idx in range(len(self.chars) - 1):
-            if Line(self.chars[last_idx : idx + 1]).width >= width:
-                last_idx = idx
+        for idx in range(len(self.chars)):
+            if Line(self.chars[last_idx : idx + 1]).width > width:
                 yield Line(self.chars[last_idx:idx], self.align)
+                last_idx = idx
         yield Line(self.chars[last_idx:], self.align)
 
 
@@ -131,16 +140,22 @@ class Text:
             if not font:
                 font = fallback_fonts_bold[0] if bold else fallback_fonts_regular[0]
             chars.append(Char(char, font, fontsize, fill, stroke_width, stroke_fill))
+        if chars:
+            lines.append(Line(chars, align))
 
         self.lines = lines
 
     @property
     def width(self) -> int:
+        if not self.lines:
+            return 0
         return max([line.width for line in self.lines])
 
     @property
     def height(self) -> int:
-        return sum([line.ascent for line in self.lines]) + self.spacing * (
+        if not self.lines:
+            return 0
+        return sum([line.height for line in self.lines]) + self.spacing * (
             len(self.lines) - 1
         )
 
@@ -152,7 +167,8 @@ class Text:
 
     def to_image(self, padding: SizeType = (0, 0)) -> IMG:
         img = Image.new(
-            "RGBA", (self.width + padding[0] * 2, self.height + padding[1] * 2)
+            "RGBA",
+            (int(self.width + padding[0] * 2), int(self.height + padding[1] * 2)),
         )
 
         top = padding[1]
@@ -166,9 +182,9 @@ class Text:
             x = left
             for char in line.chars:
                 y = top + line.ascent - char.ascent
-                char.draw_on(img, (x, y))
+                char.draw_on(img, (int(x), int(y)))
                 x += char.width
-            top += line.ascent + self.spacing
+            top += line.height + self.spacing
 
         return img
 

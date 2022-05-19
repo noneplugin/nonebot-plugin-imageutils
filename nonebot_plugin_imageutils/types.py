@@ -6,7 +6,8 @@ ModeType = Literal[
     "1", "CMYK", "F", "HSV", "I", "L", "LAB", "P", "RGB", "RGBA", "RGBX", "YCbCr"
 ]
 ColorType = Union[str, Tuple[int, int, int], Tuple[int, int, int, int]]
-PosType = Tuple[float, float]
+DrawPosType = Tuple[float, float]
+ImgPosType = Tuple[int, int]
 XYType = Tuple[float, float, float, float]
 BoxType = Tuple[int, int, int, int]
 SizeType = Tuple[int, int]

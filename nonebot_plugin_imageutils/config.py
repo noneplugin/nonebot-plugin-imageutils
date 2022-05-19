@@ -13,10 +13,10 @@ class Config(BaseModel, extra=Extra.ignore):
         "PingFang-SC-Regular.ttf",
         "SourceHanSansSC-Regular.otf",
         "NotoSansCJK-Regular.ttc",
-        "seguiemj.ttf",
-        "seguisym.ttf",
         "AppleColorEmoji.ttf",
         "NotoColorEmoji.ttf",
+        "seguiemj.ttf",
+        "seguisym.ttf",
     ]
 
     pil_fallback_fonts_bold: List[str] = [
@@ -29,8 +29,8 @@ class Config(BaseModel, extra=Extra.ignore):
         "PingFang-SC-Bold.ttf",
         "SourceHanSansSC-Bold.otf",
         "NotoSansCJK-Bold.ttc",
-        "seguiemj.ttf",
-        "seguisym.ttf",
         "AppleColorEmoji.ttf",
         "NotoColorEmoji.ttf",
+        "seguiemj.ttf",
+        "seguisym.ttf",
     ]

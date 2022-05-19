@@ -156,7 +156,7 @@ class BuildImage:
         return self
 
     def paste(
-        self, img: Union[IMG, "BuildImage"], pos: PosType, alpha: bool = False
+        self, img: Union[IMG, "BuildImage"], pos: ImgPosType, alpha: bool = False
     ) -> "BuildImage":
         """
         粘贴图片
@@ -176,7 +176,7 @@ class BuildImage:
         return self
 
     def draw_point(
-        self, pos: PosType, fill: Optional[ColorType] = None
+        self, pos: DrawPosType, fill: Optional[ColorType] = None
     ) -> "BuildImage":
         """在图片上画点"""
         self.draw.point(pos, fill=fill)
@@ -217,7 +217,7 @@ class BuildImage:
 
     def draw_polygon(
         self,
-        xy: List[PosType],
+        xy: List[DrawPosType],
         fill: Optional[ColorType] = None,
         outline: Optional[ColorType] = None,
         width: float = 1,
@@ -308,6 +308,8 @@ class BuildImage:
             text_h = build_text.height
             if text_w > width:
                 build_text.wrap(width)
+                text_w = build_text.width
+                text_h = build_text.height
             if text_h > height:
                 fontsize -= 1
                 if fontsize < min_fontsize:
@@ -315,15 +317,15 @@ class BuildImage:
             else:
                 x = left  # "left"
                 if halign == "center":
-                    left += (width - text_w) / 2
+                    x += (width - text_w) / 2
                 elif halign == "right":
-                    left += width - text_w
+                    x += width - text_w
 
                 y = top  # "top"
                 if valign == "center":
-                    top += (height - text_h) / 2
+                    y += (height - text_h) / 2
                 elif valign == "bottom":
-                    top += height - text_h
+                    y += height - text_h
 
-                self.paste(build_text.to_image(), (x, y), alpha=True)
+                self.paste(build_text.to_image(), (int(x), int(y)), alpha=True)
                 return self

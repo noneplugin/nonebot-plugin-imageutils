@@ -72,10 +72,10 @@ image = Text2Image.from_text("@mnixry 🤗", 50).to_image()
 from nonebot_plugin_imageutils import text2image
 
 # img: PIL.Image.Image
-img = text2image("N[size=40][color=red]o[/color][/size]nebBo[size=30][color=blue]T[/color][/size]\n[align=center]太强啦[/align]")
+img = text2image("N[size=40][color=red]o[/color][/size]neBo[size=30][color=blue]T[/color][/size]\n[align=center]太强啦[/align]")
 ```
 
-![3.png](https://s2.loli.net/2022/05/19/n4tQC2ZBO31sEoK.png)
+![3.png](https://s2.loli.net/2022/05/19/VZAXsKB2x65q7rl.png)
 
 
 ### 特别感谢

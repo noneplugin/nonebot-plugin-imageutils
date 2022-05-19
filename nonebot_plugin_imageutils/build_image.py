@@ -2,6 +2,7 @@ from io import BytesIO
 from pathlib import Path
 from PIL.Image import Image as IMG
 from typing import List, Union, Optional
+from PIL.ImageDraw import ImageDraw as Draw
 from PIL import Image, ImageDraw, ImageFilter
 
 from .types import *
@@ -11,7 +12,6 @@ from .text2image import Text2Image
 class BuildImage:
     def __init__(self, image: IMG):
         self.image = image
-        self.draw = ImageDraw.Draw(self.image)
 
     @property
     def width(self) -> int:
@@ -24,6 +24,10 @@ class BuildImage:
     @property
     def size(self) -> SizeType:
         return self.image.size
+
+    @property
+    def draw(self) -> Draw:
+        return ImageDraw.Draw(self.image)
 
     @classmethod
     def new(
@@ -41,7 +45,7 @@ class BuildImage:
         keep_ratio: bool = False,
         inside: bool = False,
         direction: DirectionType = "center",
-        color: ColorType = "white",
+        bg_color: ColorType = "white",
         **kwargs
     ) -> "BuildImage":
         """
@@ -54,7 +58,7 @@ class BuildImage:
                         若 `inside` 为 `True`，则调整图片大小至包含于期望尺寸，不足部分设为指定颜色；
                         若 `inside` 为 `False`，则调整图片大小至包含期望尺寸，超出部分裁剪
           * ``direction``: 调整图片大小时图片的方位；默认为居中
-          * ``color``: 不足部分设置的颜色
+          * ``bg_color``: 不足部分设置的颜色
         """
         width, height = size
         if keep_ratio:
@@ -70,14 +74,14 @@ class BuildImage:
         )
 
         if keep_ratio:
-            self.resize_canvas(size, direction, color, **kwargs)
+            self.resize_canvas(size, direction, bg_color, **kwargs)
         return self
 
     def resize_canvas(
         self,
         size: SizeType,
         direction: DirectionType = "center",
-        color: ColorType = "white",
+        bg_color: ColorType = "white",
     ) -> "BuildImage":
         """
         调整“画布”大小，超出部分裁剪，不足部分设为指定颜色
@@ -86,7 +90,7 @@ class BuildImage:
           * ``img``: 待调整的图片
           * ``size``: 期望图片大小
           * ``direction``: 调整图片大小时图片的方位；默认为居中
-          * ``color``: 不足部分设置的颜色
+          * ``bg_color``: 不足部分设置的颜色
         """
         w, h = size
         x = int((w - self.width) / 2)
@@ -99,7 +103,7 @@ class BuildImage:
             x = 0
         elif direction in ["east", "northeast", "southeast"]:
             x = w - self.width
-        result = Image.new(self.image.mode, size, color)
+        result = Image.new(self.image.mode, size, bg_color)
         result.paste(self.image, (x, y))
         self.image = result
         return self
@@ -114,7 +118,7 @@ class BuildImage:
 
     def rotate(self, angle: float, **kwargs) -> "BuildImage":
         """旋转图片"""
-        self.image.rotate(angle, resample=Image.BICUBIC, **kwargs)
+        self.image = self.image.rotate(angle, resample=Image.BICUBIC, **kwargs)
         return self
 
     def square(self) -> "BuildImage":
@@ -148,11 +152,11 @@ class BuildImage:
 
     def crop(self, box: BoxType) -> "BuildImage":
         """裁剪图片"""
-        self.image.crop(box)
+        self.image = self.image.crop(box)
         return self
 
     def convert(self, mode: ModeType, **kwargs) -> "BuildImage":
-        self.image.convert(mode, **kwargs)
+        self.image = self.image.convert(mode, **kwargs)
         return self
 
     def paste(

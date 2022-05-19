@@ -132,7 +132,7 @@ class Text2Image:
         stroke_fill: Optional[ColorType] = None,
         fontname: str = "",
         fallback_fonts: List[str] = [],
-    ):
+    ) -> "Text2Image":
         """
         从文本构建 `Text2Image` 对象
 
@@ -174,7 +174,7 @@ class Text2Image:
         align: HAlignType = "left",
         fontname: str = "",
         fallback_fonts: List[str] = [],
-    ):
+    ) -> "Text2Image":
         """
         从含有 `BBCode` 的文本构建 `Text2Image` 对象
 
@@ -327,11 +327,12 @@ class Text2Image:
             len(self.lines) - 1
         )
 
-    def wrap(self, width: float):
+    def wrap(self, width: float) -> "Text2Image":
         new_lines: List[Line] = []
         for line in self.lines:
             new_lines.extend(line.wrap(width))
         self.lines = new_lines
+        return self
 
     def to_image(
         self, bg_color: Optional[ColorType] = None, padding: SizeType = (0, 0)

@@ -333,3 +333,20 @@ class BuildImage:
 
                 self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
                 return self
+
+    def save(self, format: Optional[str] = None, **params) -> BytesIO:
+        output = BytesIO()
+        self.image.save(output, format, **params)
+        return output
+
+    def save_jpg(self) -> BytesIO:
+        output = BytesIO()
+        image = self.image.convert("RGB")
+        image.save(output, format="jpeg")
+        return output
+
+    def save_png(self) -> BytesIO:
+        output = BytesIO()
+        image = self.image.convert("RGBA")
+        image.save(output, format="png")
+        return output

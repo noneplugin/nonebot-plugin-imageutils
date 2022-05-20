@@ -168,9 +168,9 @@ class Text2Image:
     def from_bbcode_text(
         cls,
         text: str,
-        fontsize: int = 20,
+        fontsize: int = 30,
         fill: ColorType = "black",
-        spacing: int = 4,
+        spacing: int = 6,
         align: HAlignType = "left",
         fontname: str = "",
         fallback_fonts: List[str] = [],
@@ -187,7 +187,7 @@ class Text2Image:
 
         :参数:
           * ``text``: 文本
-          * ``fontsize``: 字体大小，默认为 20
+          * ``fontsize``: 字体大小，默认为 30
           * ``fill``: 文字颜色，默认为 `black`
           * ``spacing``: 多行文字间距
           * ``align``: 多行文字对齐方式，默认为靠左
@@ -323,9 +323,11 @@ class Text2Image:
     def height(self) -> int:
         if not self.lines:
             return 0
-        return sum(
-            [line.ascent + line.descent for line in self.lines]
-        ) + self.spacing * (len(self.lines) - 1)
+        return (
+            sum([line.ascent for line in self.lines])
+            + self.lines[-1].descent
+            + self.spacing * (len(self.lines) - 1)
+        )
 
     def wrap(self, width: float) -> "Text2Image":
         new_lines: List[Line] = []
@@ -356,7 +358,7 @@ class Text2Image:
                 y = top + line.ascent - char.ascent
                 char.draw_on(img, (int(x), int(y)))
                 x += char.width
-            top += line.ascent + line.descent + self.spacing
+            top += line.ascent + self.spacing
 
         return img
 
@@ -365,7 +367,7 @@ def text2image(
     text: str,
     bg_color: ColorType = "white",
     padding: SizeType = (10, 10),
-    max_width: Optional[int] = 500,
+    max_width: Optional[int] = None,
     **kwargs,
 ) -> IMG:
     """

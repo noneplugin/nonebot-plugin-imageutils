@@ -201,28 +201,32 @@ class Text2Image:
             has_param: bool = True,
             param_pattern: str = "",
             default_param: Any = None,
-        ) -> Iterator[Tuple[Any, int, int]]:
-            text_begin = 0
-            pattern = rf"=(?P<param>{param_pattern})" if has_param else ""
-            for block in re.finditer(
-                rf"\[{type}{pattern}\](?P<content>.*?)\[/{type}\]", text, flags=re.S
-            ):
-                yield (
-                    default_param if has_param else False,
-                    text_begin,
-                    block.pos + block.start(),
-                )
-                yield (
-                    block.group("param") if has_param else True,
-                    block.pos + block.start("content"),
-                    block.pos + block.end("content"),
-                )
-                text_begin = block.pos + block.end()
-            yield (
-                default_param if has_param else False,
-                text_begin,
-                len(text),
-            )
+        ) -> Iterator[Tuple[Any, int, int, int, int]]:
+            def parse_tag(
+                text: str, offset: int = 0
+            ) -> Iterator[Tuple[Any, int, int, int, int]]:
+                pattern = rf"=(?P<param>{param_pattern})" if has_param else ""
+                for block in re.finditer(
+                    rf"(?P<tag>\[{type}{pattern}\](?P<content>.*)\[/{type}\])",
+                    text,
+                    flags=re.S,
+                ):
+                    for result in parse_tag(
+                        block.group("content"),
+                        offset + block.pos + block.start("content"),
+                    ):
+                        yield result
+                    yield (
+                        block.group("param") if has_param else True,
+                        offset + block.pos + block.start("tag"),
+                        offset + block.pos + block.start("content"),
+                        offset + block.pos + block.end("content"),
+                        offset + block.pos + block.end("tag"),
+                    )
+
+            for result in parse_tag(text):
+                yield result
+            yield (default_param if has_param else False, 0, 0, len(text), len(text))
 
         split_align = partial(
             split_text,
@@ -269,9 +273,15 @@ class Text2Image:
         size_parts = list(split_size(text))
         bold_parts = list(split_bold(text))
 
-        def get_param(index: int, parts: list[Tuple[Any, int, int]]) -> Optional[Any]:
-            for param, start, end in parts:
-                if start <= index < end:
+        def get_param(
+            index: int, parts: list[Tuple[Any, int, int, int, int]]
+        ) -> Optional[Any]:
+            for param, tag1_start, tag1_end, tag2_start, tag2_end in parts:
+                if tag1_start != tag1_end and tag1_start <= index < tag1_end:
+                    return None
+                if tag2_start != tag2_end and tag2_start <= index < tag2_end:
+                    return None
+                if tag1_end != tag2_start and tag1_end <= index < tag2_start:
                     return param
             return None
 

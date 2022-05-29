@@ -27,6 +27,7 @@ class Char:
         self.stroke_fill = stroke_fill
 
         if self.font.valid_size:
+            self.stroke_width = 0
             self.pilfont = self.font.load_font(self.font.valid_size)
         else:
             self.pilfont = self.font.load_font(fontsize)
@@ -55,8 +56,6 @@ class Char:
                 self.char,
                 font=self.pilfont,
                 fill=self.fill,
-                stroke_width=self.stroke_width,
-                stroke_fill=self.stroke_fill,
                 embedded_color=True,
             )
             new_img = new_img.resize(
@@ -85,7 +84,11 @@ class Line:
     def width(self) -> int:
         if not self.chars:
             return 0
-        return sum([char.width for char in self.chars])
+        return (
+            sum([char.width - char.stroke_width * 2 for char in self.chars])
+            + self.chars[0].stroke_width
+            + self.chars[-1].stroke_width
+        )
 
     @property
     def height(self) -> int:
@@ -369,7 +372,7 @@ class Text2Image:
             for char in line.chars:
                 y = top + line.ascent - char.ascent
                 char.draw_on(img, (int(x), int(y)))
-                x += char.width
+                x += char.width - char.stroke_width * 2
             top += line.ascent + self.spacing
 
         return img

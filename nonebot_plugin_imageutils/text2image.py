@@ -1,4 +1,5 @@
 import re
+from bbcode import Parser
 from functools import partial
 from PIL import Image, ImageDraw
 from PIL.Image import Image as IMG
@@ -197,130 +198,86 @@ class Text2Image:
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
         """
-
-        def split_text(
-            text: str,
-            type: str,
-            has_param: bool = True,
-            param_pattern: str = "",
-            default_param: Any = None,
-        ) -> Iterator[Tuple[Any, int, int, int, int]]:
-            def parse_tag(
-                text: str, offset: int = 0
-            ) -> Iterator[Tuple[Any, int, int, int, int]]:
-                pattern = rf"=(?P<param>{param_pattern})" if has_param else ""
-                for block in re.finditer(
-                    rf"(?P<tag>\[{type}{pattern}\](?P<content>.*)\[/{type}\])",
-                    text,
-                    flags=re.S,
-                ):
-                    for result in parse_tag(
-                        block.group("content"),
-                        offset + block.pos + block.start("content"),
-                    ):
-                        yield result
-                    yield (
-                        block.group("param") if has_param else True,
-                        offset + block.pos + block.start("tag"),
-                        offset + block.pos + block.start("content"),
-                        offset + block.pos + block.end("content"),
-                        offset + block.pos + block.end("tag"),
-                    )
-
-            for result in parse_tag(text):
-                yield result
-            yield (default_param if has_param else False, 0, 0, len(text), len(text))
-
-        split_align = partial(
-            split_text,
-            type="align",
-            has_param=True,
-            param_pattern=r"left|right|center",
-            default_param=align,
-        )
-
-        colors = "|".join(colormap.keys())
-        split_color = partial(
-            split_text,
-            type="color",
-            has_param=True,
-            param_pattern=rf"#[a-fA-F0-9]{6}|{colors}",
-            default_param=fill,
-        )
-
-        split_font = partial(
-            split_text,
-            type="font",
-            has_param=True,
-            param_pattern=r"\S+\.ttf|\S+\.ttc|\S+\.otf|\S+\.fnt",
-            default_param=fontname,
-        )
-
-        split_size = partial(
-            split_text,
-            type="size",
-            has_param=True,
-            param_pattern=r"\d+",
-            default_param=fontsize,
-        )
-
-        split_bold = partial(
-            split_text,
-            type="b",
-            has_param=False,
-        )
-
-        align_parts = list(split_align(text))
-        color_parts = list(split_color(text))
-        font_parts = list(split_font(text))
-        size_parts = list(split_size(text))
-        bold_parts = list(split_bold(text))
-
-        def get_param(
-            index: int, parts: list[Tuple[Any, int, int, int, int]]
-        ) -> Optional[Any]:
-            for param, tag1_start, tag1_end, tag2_start, tag2_end in parts:
-                if tag1_start != tag1_end and tag1_start <= index < tag1_end:
-                    return None
-                if tag2_start != tag2_end and tag2_start <= index < tag2_end:
-                    return None
-                if tag1_end != tag2_start and tag1_end <= index < tag2_start:
-                    return param
-            return None
-
         lines: List[Line] = []
         chars: List[Char] = []
+
+        align_stack = []
+        color_stack = []
+        font_stack = []
+        size_stack = []
+        bold_stack = []
         last_align = align
-        for index, char in enumerate(text):
-            char_align = get_param(index, align_parts)
-            if char_align is None:
-                continue
-            char_color = get_param(index, color_parts)
-            if char_color is None:
-                continue
-            char_font = get_param(index, font_parts)
-            if char_font is None:
-                continue
-            char_size = get_param(index, size_parts)
-            if char_size is None:
-                continue
-            char_bold = get_param(index, bold_parts)
-            if char_bold is None:
-                continue
-            if char == "\n":
+
+        align_pattern = r"left|right|center"
+        colors = "|".join(colormap.keys())
+        color_pattern = rf"#[a-fA-F0-9]{6}|{colors}"
+        font_pattern = r"\S+\.ttf|\S+\.ttc|\S+\.otf|\S+\.fnt"
+        size_pattern = r"\d+"
+
+        parser = Parser()
+        parser.recognized_tags = {}
+        parser.add_formatter("align", None)
+        parser.add_formatter("color", None)
+        parser.add_formatter("font", None)
+        parser.add_formatter("size", None)
+        parser.add_formatter("b", None)
+        tokens = parser.tokenize(text)
+        for token_type, tag_name, tag_opts, token_text in tokens:
+            if token_type == 1:
+                if tag_name == "align":
+                    if re.fullmatch(align_pattern, tag_opts["align"]):
+                        align_stack.append(tag_opts["align"])
+                elif tag_name == "color":
+                    if re.fullmatch(color_pattern, tag_opts["color"]):
+                        color_stack.append(tag_opts["color"])
+                elif tag_name == "font":
+                    if re.fullmatch(font_pattern, tag_opts["font"]):
+                        font_stack.append(tag_opts["font"])
+                elif tag_name == "size":
+                    if re.fullmatch(size_pattern, tag_opts["size"]):
+                        size_stack.append(tag_opts["size"])
+                elif tag_name == "b":
+                    bold_stack.append(True)
+            elif token_type == 2:
+                if tag_name == "align":
+                    if align_stack:
+                        align_stack.pop()
+                elif tag_name == "color":
+                    if color_stack:
+                        color_stack.pop()
+                elif tag_name == "font":
+                    if font_stack:
+                        font_stack.pop()
+                elif tag_name == "size":
+                    if size_stack:
+                        size_stack.pop()
+                elif tag_name == "b":
+                    if bold_stack:
+                        bold_stack.pop()
+            elif token_type == 3:
                 lines.append(Line(chars, last_align))
                 chars = []
-                continue
-            font = get_proper_font(char, char_bold, char_font, fallback_fonts)
-            if not font:
-                font = (
-                    fallback_fonts_bold[0] if char_bold else fallback_fonts_regular[0]
-                )
-            if char_align != last_align:
-                lines.append(Line(chars, last_align))
-                last_align = char_align
-                chars = []
-            chars.append(Char(char, font, int(char_size), char_color))
+            elif token_type == 4:
+                char_align = align_stack[-1] if align_stack else align
+                char_color = color_stack[-1] if color_stack else fill
+                char_font = font_stack[-1] if font_stack else fontname
+                char_size = size_stack[-1] if size_stack else fontsize
+                char_bold = bold_stack[-1] if bold_stack else False
+
+                if char_align != last_align:
+                    lines.append(Line(chars, last_align))
+                    chars = []
+                    last_align = char_align
+                for char in token_text:
+                    font = get_proper_font(char, char_bold, char_font, fallback_fonts)
+                    if not font:
+                        font = (
+                            fallback_fonts_bold[0]
+                            if char_bold
+                            else fallback_fonts_regular[0]
+                        )
+                    chars.append(Char(char, font, int(char_size), char_color))
+
         if chars:
             lines.append(Line(chars, last_align))
 

@@ -43,7 +43,7 @@ class Char:
             self.width *= ratio
             self.height *= ratio
 
-    def draw_on(self, img: IMG, pos: ImgPosType):
+    def draw_on(self, img: IMG, pos: PosTypeInt):
         if self.font.valid_size:
             ratio = self.font.valid_size / self.fontsize
             new_img = Image.new(
@@ -364,6 +364,8 @@ class Text2Image:
                 left += self.width - line.width
 
             x = left
+            if line.chars:
+                x += line.chars[0].stroke_width
             for char in line.chars:
                 y = top + line.ascent - char.ascent
                 char.draw_on(img, (int(x), int(y)))

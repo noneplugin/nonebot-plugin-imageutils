@@ -4,7 +4,6 @@ from pydantic import BaseModel, Extra
 
 class Config(BaseModel, extra=Extra.ignore):
     pil_fallback_fonts_regular: List[str] = [
-        "tahoma.ttf",
         "arial.ttf",
         "segoeui.ttf",
         "OpenSans-Regular.ttf",
@@ -20,7 +19,6 @@ class Config(BaseModel, extra=Extra.ignore):
     ]
 
     pil_fallback_fonts_bold: List[str] = [
-        "tahoma.ttf",
         "arialbd.ttf",
         "segoeuib.ttf",
         "OpenSans-Bold.ttf",

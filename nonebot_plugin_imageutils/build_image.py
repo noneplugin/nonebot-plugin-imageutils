@@ -1,5 +1,8 @@
+import cv2 as cv
+import numpy as np
 from io import BytesIO
 from pathlib import Path
+from PIL.ImageColor import getrgb
 from PIL.Image import Image as IMG
 from typing import List, Union, Optional
 from PIL.ImageDraw import ImageDraw as Draw
@@ -26,12 +29,16 @@ class BuildImage:
         return self.image.size
 
     @property
+    def mode(self) -> ModeType:
+        return self.image.mode
+
+    @property
     def draw(self) -> Draw:
         return ImageDraw.Draw(self.image)
 
     @classmethod
     def new(
-        cls, size: SizeType, mode: ModeType = "RGBA", color: Optional[ColorType] = None
+        cls, mode: ModeType, size: SizeType, color: Optional[ColorType] = None
     ) -> "BuildImage":
         return cls(Image.new(mode, size, color))  # type: ignore
 
@@ -39,13 +46,16 @@ class BuildImage:
     def open(cls, file: Union[str, bytes, BytesIO, Path]) -> "BuildImage":
         return cls(Image.open(file))
 
+    def copy(self) -> "BuildImage":
+        return BuildImage(self.image.copy())
+
     def resize(
         self,
         size: SizeType,
         keep_ratio: bool = False,
         inside: bool = False,
         direction: DirectionType = "center",
-        bg_color: ColorType = "white",
+        bg_color: Optional[ColorType] = None,
         **kwargs
     ) -> "BuildImage":
         """
@@ -63,31 +73,30 @@ class BuildImage:
         width, height = size
         if keep_ratio:
             if inside:
-                ratio = max(self.width / width, self.height / height)
+                ratio = min(width / self.width, height / self.height)
             else:
-                ratio = min(self.width / width, self.height / height)
-            width = int(width * ratio)
-            height = int(height * ratio)
+                ratio = max(width / self.width, height / self.height)
+            width = int(self.width * ratio)
+            height = int(self.height * ratio)
 
-        self.image = self.image.resize(
-            (width, height), resample=Image.ANTIALIAS, **kwargs
+        image = BuildImage(
+            self.image.resize((width, height), resample=Image.ANTIALIAS, **kwargs)
         )
 
         if keep_ratio:
-            self.resize_canvas(size, direction, bg_color, **kwargs)
-        return self
+            image = image.resize_canvas(size, direction, bg_color, **kwargs)
+        return image
 
     def resize_canvas(
         self,
         size: SizeType,
         direction: DirectionType = "center",
-        bg_color: ColorType = "white",
+        bg_color: Optional[ColorType] = None,
     ) -> "BuildImage":
         """
         调整“画布”大小，超出部分裁剪，不足部分设为指定颜色
 
         :参数:
-          * ``img``: 待调整的图片
           * ``size``: 期望图片大小
           * ``direction``: 调整图片大小时图片的方位；默认为居中
           * ``bg_color``: 不足部分设置的颜色
@@ -103,10 +112,9 @@ class BuildImage:
             x = 0
         elif direction in ["east", "northeast", "southeast"]:
             x = w - self.width
-        result = Image.new(self.image.mode, size, bg_color)
-        result.paste(self.image, (x, y))
-        self.image = result
-        return self
+        image = BuildImage.new(self.mode, size, bg_color)
+        image.paste(self.image, (x, y))
+        return image
 
     def resize_width(self, width: int, **kwargs) -> "BuildImage":
         """调整图片宽度，不改变长宽比"""
@@ -116,10 +124,12 @@ class BuildImage:
         """调整图片高度，不改变长宽比"""
         return self.resize((int(self.width * height / self.height), height), **kwargs)
 
-    def rotate(self, angle: float, **kwargs) -> "BuildImage":
+    def rotate(self, angle: float, expand: bool = False, **kwargs) -> "BuildImage":
         """旋转图片"""
-        self.image = self.image.rotate(angle, resample=Image.BICUBIC, **kwargs)
-        return self
+        image = BuildImage(
+            self.image.rotate(angle, resample=Image.BICUBIC, expand=expand, **kwargs)
+        )
+        return image
 
     def square(self) -> "BuildImage":
         """将图片裁剪为方形"""
@@ -128,18 +138,19 @@ class BuildImage:
 
     def circle(self) -> "BuildImage":
         """将图片裁剪为圆形"""
-        self.square()
+        image = self.square()
         mask = Image.new("L", self.size, 0)
-        self.draw.ellipse((1, 1, self.size[0] - 2, self.size[1] - 2), "white")
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((1, 1, self.size[0] - 2, self.size[1] - 2), 255)
         mask = mask.filter(ImageFilter.GaussianBlur(0))
-        self.image.putalpha(mask)
-        return self
+        image.image.putalpha(mask)
+        return image
 
     def circle_corner(self, r: int) -> "BuildImage":
         """将图片裁剪为圆角矩形"""
-        self.convert("RGBA")
-        w, h = self.size
-        alpha = self.image.split()[-1]
+        image = self.convert("RGBA")
+        w, h = image.size
+        alpha = image.image.split()[-1]
         circle = Image.new("L", (r * 2, r * 2), 0)  # 创建黑色方形
         draw = ImageDraw.Draw(circle)
         draw.ellipse((0, 0, r * 2, r * 2), fill=255)  # 黑色方形内切白色圆形
@@ -147,20 +158,22 @@ class BuildImage:
         alpha.paste(circle.crop((r, 0, r * 2, r)), (w - r, 0))  # 右上角
         alpha.paste(circle.crop((r, r, r * 2, r * 2)), (w - r, h - r))  # 右下角
         alpha.paste(circle.crop((0, r, r, r * 2)), (0, h - r))  # 左下角
-        self.image.putalpha(alpha)
-        return self
+        image.image.putalpha(alpha)
+        return image
 
     def crop(self, box: BoxType) -> "BuildImage":
         """裁剪图片"""
-        self.image = self.image.crop(box)
-        return self
+        return BuildImage(self.image.crop(box))
 
     def convert(self, mode: ModeType, **kwargs) -> "BuildImage":
-        self.image = self.image.convert(mode, **kwargs)
-        return self
+        return BuildImage(self.image.convert(mode, **kwargs))
 
     def paste(
-        self, img: Union[IMG, "BuildImage"], pos: ImgPosType, alpha: bool = False
+        self,
+        img: Union[IMG, "BuildImage"],
+        pos: PosTypeInt = (0, 0),
+        alpha: bool = False,
+        below: bool = False,
     ) -> "BuildImage":
         """
         粘贴图片
@@ -169,18 +182,163 @@ class BuildImage:
           * ``img``: 待粘贴的图片
           * ``pos``: 粘贴位置
           * ``alpha``: 图片背景是否为透明
+          * ``below``: 是否粘贴到底层
         """
         if isinstance(img, BuildImage):
             img = img.image
+        new_img = Image.new(self.mode, self.size) if below else self.image.copy()
         if alpha:
             img = img.convert("RGBA")
-            self.image.paste(img, pos, mask=img)
+            new_img.paste(img, pos, mask=img)
         else:
-            self.image.paste(img, pos)
+            new_img.paste(img, pos)
+        if below:
+            new_img.paste(self.image, mask=self.image if self.mode == "RGBA" else None)
+        self.image = new_img
         return self
 
+    def filter(self, filter: ImageFilter.Filter) -> "BuildImage":
+        """滤波"""
+        return BuildImage(self.image.filter(filter))
+
+    def transpose(self, method: Literal[0, 1, 2, 3, 4, 5, 6]) -> "BuildImage":
+        """变换"""
+        return BuildImage(self.image.transpose(method))
+
+    def perspective(self, points: PointsTYpe) -> "BuildImage":
+        """
+        透视变换
+
+        :参数:
+          * ``points``: 变换后点的位置，顺序依次为：左上->右上->右下->左下
+        """
+
+        def find_coeffs(pa: PointsTYpe, pb: PointsTYpe):
+            matrix = []
+            for p1, p2 in zip(pa, pb):
+                matrix.append(
+                    [p1[0], p1[1], 1, 0, 0, 0, -p2[0] * p1[0], -p2[0] * p1[1]]
+                )
+                matrix.append(
+                    [0, 0, 0, p1[0], p1[1], 1, -p2[1] * p1[0], -p2[1] * p1[1]]
+                )
+            A = np.matrix(matrix, dtype=np.float32)
+            B = np.array(pb).reshape(8)
+            res = np.dot(np.linalg.inv(A.T * A) * A.T, B)
+            return np.array(res).reshape(8)
+
+        img_w, img_h = self.size
+        points_w = [p[0] for p in points]
+        points_h = [p[1] for p in points]
+        new_w = int(max(points_w) - min(points_w))
+        new_h = int(max(points_h) - min(points_h))
+        p = ((0, 0), (img_w, 0), (img_w, img_h), (0, img_h))
+        coeffs = find_coeffs(points, p)
+        return BuildImage(
+            self.image.transform(
+                (new_w, new_h), Image.PERSPECTIVE, coeffs, Image.BICUBIC
+            )
+        )
+
+    def gradient_color(
+        self,
+        start_color: ColorType,
+        stop_color: ColorType,
+        direction: OrientType = "vertical",
+    ) -> "BuildImage":
+        """
+        渐变色
+
+        :参数:
+          * ``start_color``: 起始颜色
+          * ``stop_color``: 终止颜色
+          * ``direction``: 渐变方向，"vertical"：从上到下；"horizontal"：从左到右
+        """
+        frame = Image.new("RGBA", self.size, start_color)
+        top = Image.new("RGBA", self.size, stop_color)
+        mask = Image.new("L", self.size)
+        mask_data = []
+        if direction == "vertical":
+            for y in range(self.height):
+                mask_data.extend([int(255 * (y / self.height))] * self.width)
+        else:
+            mask_line = []
+            for x in range(self.width):
+                mask_line.append(int(255 * (x / self.width)))
+            mask_data = mask_line * self.height
+        mask.putdata(mask_data)
+        frame.paste(top, mask=mask)
+        return BuildImage(frame)
+
+    def motion_blur(self, angle: float = 0, degree: int = 0) -> "BuildImage":
+        """
+        运动模糊
+
+        :参数:
+          * ``angle``: 运动方向
+          * ``degree``: 模糊程度
+        """
+        if degree == 0:
+            return self.copy()
+        matrix = cv.getRotationMatrix2D((degree / 2, degree / 2), angle + 45, 1)
+        kernel = np.diag(np.ones(degree))
+        kernel = cv.warpAffine(kernel, matrix, (degree, degree)) / degree
+        blurred = cv.filter2D(np.asarray(self.image), -1, kernel)
+        cv.normalize(blurred, blurred, 0, 255, cv.NORM_MINMAX)
+        return BuildImage(Image.fromarray(np.array(blurred, dtype=np.uint8)))
+
+    def distort(self, coefficients: DistortType) -> "BuildImage":
+        """
+        畸变
+
+        :参数:
+          * ``coefficients``: 畸变参数
+        """
+        res = cv.undistort(
+            np.asarray(self.image),
+            np.array([[100, 0, self.width / 2], [0, 100, self.height / 2], [0, 0, 1]]),
+            np.asarray(coefficients),
+        )
+        return BuildImage(Image.fromarray(np.array(res, dtype=np.uint8)))
+
+    def color_mask(self, color: ColorType) -> "BuildImage":
+        """
+        颜色滤镜，改变图片色调
+
+        :参数:
+          * ``color``: 目标颜色
+        """
+        img = self.image.convert("RGB")
+        w, h = img.size
+        img_array = np.asarray(img)
+        img_gray = cv.cvtColor(img_array, cv.COLOR_RGB2GRAY)
+        img_hsl = cv.cvtColor(img_array, cv.COLOR_RGB2HLS)
+        img_new = np.zeros((h, w, 3), np.uint8)
+
+        if isinstance(color, str):
+            color = getrgb(color)
+        r = color[0]
+        g = color[1]
+        b = color[2]
+        rgb_sum = sum(color)
+        for i in range(h):
+            for j in range(w):
+                value = img_gray[i, j]
+                new_color = [
+                    int(value * r / rgb_sum),
+                    int(value * g / rgb_sum),
+                    int(value * b / rgb_sum),
+                ]
+                img_new[i, j] = new_color
+        img_new_hsl = cv.cvtColor(img_new, cv.COLOR_RGB2HLS)
+        result = np.dstack(
+            (img_new_hsl[:, :, 0], img_hsl[:, :, 1], img_new_hsl[:, :, 2])
+        )
+        result = cv.cvtColor(result, cv.COLOR_HLS2RGB)
+        return BuildImage(Image.fromarray(result))
+
     def draw_point(
-        self, pos: DrawPosType, fill: Optional[ColorType] = None
+        self, pos: PosTypeFloat, fill: Optional[ColorType] = None
     ) -> "BuildImage":
         """在图片上画点"""
         self.draw.point(pos, fill=fill)
@@ -221,7 +379,7 @@ class BuildImage:
 
     def draw_polygon(
         self,
-        xy: List[DrawPosType],
+        xy: List[PosTypeFloat],
         fill: Optional[ColorType] = None,
         outline: Optional[ColorType] = None,
         width: float = 1,

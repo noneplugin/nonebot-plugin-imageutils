@@ -210,7 +210,7 @@ class Text2Image:
 
         align_pattern = r"left|right|center"
         colors = "|".join(colormap.keys())
-        color_pattern = rf"#[a-fA-F0-9]{6}|{colors}"
+        color_pattern = rf"#[a-fA-F0-9]{{6}}|{colors}"
         font_pattern = r"\S+\.ttf|\S+\.ttc|\S+\.otf|\S+\.fnt"
         size_pattern = r"\d+"
 

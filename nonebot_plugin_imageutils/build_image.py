@@ -1,9 +1,11 @@
 import cv2 as cv
 import numpy as np
 from io import BytesIO
+from typing import Type
 from pathlib import Path
 from PIL.ImageColor import getrgb
 from PIL.Image import Image as IMG
+from PIL.ImageFilter import Filter
 from typing import List, Union, Optional
 from PIL.ImageDraw import ImageDraw as Draw
 from PIL import Image, ImageDraw, ImageFilter
@@ -52,6 +54,7 @@ class BuildImage:
     def resize(
         self,
         size: SizeType,
+        resample: ResampleType = Image.ANTIALIAS,
         keep_ratio: bool = False,
         inside: bool = False,
         direction: DirectionType = "center",
@@ -80,7 +83,7 @@ class BuildImage:
             height = int(self.height * ratio)
 
         image = BuildImage(
-            self.image.resize((width, height), resample=Image.ANTIALIAS, **kwargs)
+            self.image.resize((width, height), resample=resample, **kwargs)
         )
 
         if keep_ratio:
@@ -124,10 +127,16 @@ class BuildImage:
         """调整图片高度，不改变长宽比"""
         return self.resize((int(self.width * height / self.height), height), **kwargs)
 
-    def rotate(self, angle: float, expand: bool = False, **kwargs) -> "BuildImage":
+    def rotate(
+        self,
+        angle: float,
+        resample: ResampleType = Image.BICUBIC,
+        expand: bool = False,
+        **kwargs
+    ) -> "BuildImage":
         """旋转图片"""
         image = BuildImage(
-            self.image.rotate(angle, resample=Image.BICUBIC, expand=expand, **kwargs)
+            self.image.rotate(angle, resample=resample, expand=expand, **kwargs)
         )
         return image
 
@@ -197,11 +206,11 @@ class BuildImage:
         self.image = new_img
         return self
 
-    def filter(self, filter: ImageFilter.Filter) -> "BuildImage":
+    def filter(self, filter: Type[Filter]) -> "BuildImage":
         """滤波"""
         return BuildImage(self.image.filter(filter))
 
-    def transpose(self, method: Literal[0, 1, 2, 3, 4, 5, 6]) -> "BuildImage":
+    def transpose(self, method: TransposeType) -> "BuildImage":
         """变换"""
         return BuildImage(self.image.transpose(method))
 
@@ -417,6 +426,7 @@ class BuildImage:
         text: str,
         max_fontsize: int = 30,
         min_fontsize: int = 12,
+        allow_wrap: bool = False,
         bold: bool = False,
         fill: ColorType = "black",
         spacing: int = 4,
@@ -436,6 +446,7 @@ class BuildImage:
           * ``text``: 文字，支持多行
           * ``max_fontsize``: 允许的最大字体大小
           * ``min_fontsize``: 允许的最小字体大小
+          * ``allow_wrap``: 是否允许折行
           * ``bold``: 是否加粗
           * ``fill``: 文字颜色
           * ``spacing``: 多行文字间距
@@ -468,11 +479,11 @@ class BuildImage:
             )
             text_w = text2img.width
             text_h = text2img.height
-            if text_w > width:
+            if text_w > width and allow_wrap:
                 text2img.wrap(width)
                 text_w = text2img.width
                 text_h = text2img.height
-            if text_h > height:
+            if text_w > width or text_h > height:
                 fontsize -= 1
                 if fontsize < min_fontsize:
                     raise ValueError("在指定的区域和字体大小范围内画不下这段文字")

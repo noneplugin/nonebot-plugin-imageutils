@@ -1,4 +1,5 @@
-from typing import Tuple, Union
+from PIL.Image import _Resample
+from typing import Tuple, Union, Type
 from typing_extensions import Literal
 
 
@@ -27,3 +28,5 @@ DirectionType = Literal[
     "southwest",
     "southeast",
 ]
+ResampleType = Literal[0, 1, 2, 3, 4, 5]
+TransposeType = Literal[0, 1, 2, 3, 4, 5, 6]

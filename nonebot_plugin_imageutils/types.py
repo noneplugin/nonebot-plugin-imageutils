@@ -1,5 +1,4 @@
-from PIL.Image import _Resample
-from typing import Tuple, Union, Type
+from typing import Tuple, Union
 from typing_extensions import Literal
 
 

@@ -204,8 +204,10 @@ class Text2Image:
         chars: List[Char] = []
 
         def new_line():
+            nonlocal lines
+            nonlocal chars
             lines.append(Line(chars, last_align, fontsize))
-            chars.clear()
+            chars = []
 
         align_stack = []
         color_stack = []

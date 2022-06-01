@@ -206,7 +206,7 @@ class BuildImage:
         self.image = new_img
         return self
 
-    def filter(self, filter: Type[Filter]) -> "BuildImage":
+    def filter(self, filter: Union[Filter, Type[Filter]]) -> "BuildImage":
         """滤波"""
         return BuildImage(self.image.filter(filter))
 

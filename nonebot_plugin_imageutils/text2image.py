@@ -13,9 +13,9 @@ class Char:
     def __init__(
         self,
         char: str,
-        font: Font,
-        fontsize: int,
-        fill: ColorType,
+        font: Font = fallback_fonts_regular[0],
+        fontsize: int = 16,
+        fill: ColorType = "black",
         stroke_width: int = 0,
         stroke_fill: Optional[ColorType] = None,
     ):
@@ -76,9 +76,12 @@ class Char:
 
 
 class Line:
-    def __init__(self, chars: List[Char], align: HAlignType = "left"):
+    def __init__(
+        self, chars: List[Char], align: HAlignType = "left", fontsize: int = 16
+    ):
         self.chars: List[Char] = chars
         self.align: HAlignType = align
+        self.fontsize = fontsize
 
     @property
     def width(self) -> int:
@@ -93,19 +96,19 @@ class Line:
     @property
     def height(self) -> int:
         if not self.chars:
-            return 0
+            return Char("A", fontsize=self.fontsize).height
         return max([char.height for char in self.chars])
 
     @property
     def ascent(self) -> int:
         if not self.chars:
-            return 0
+            return Char("A", fontsize=self.fontsize).ascent
         return max([char.ascent for char in self.chars])
 
     @property
     def descent(self) -> int:
         if not self.chars:
-            return 0
+            return Char("A", fontsize=self.fontsize).descent
         return max([char.descent for char in self.chars])
 
     def wrap(self, width: float) -> Iterator["Line"]:
@@ -164,7 +167,7 @@ class Text2Image:
                 font = fallback_fonts_bold[0] if bold else fallback_fonts_regular[0]
             chars.append(Char(char, font, fontsize, fill, stroke_width, stroke_fill))
         if chars:
-            lines.append(Line(chars, align))
+            lines.append(Line(chars, align, fontsize))
         return cls(lines, spacing)
 
     @classmethod
@@ -199,6 +202,10 @@ class Text2Image:
         """
         lines: List[Line] = []
         chars: List[Char] = []
+
+        def new_line():
+            lines.append(Line(chars, last_align, fontsize))
+            chars.clear()
 
         align_stack = []
         color_stack = []
@@ -254,8 +261,7 @@ class Text2Image:
                     if bold_stack:
                         bold_stack.pop()
             elif token_type == 3:
-                lines.append(Line(chars, last_align))
-                chars = []
+                new_line()
             elif token_type == 4:
                 char_align = align_stack[-1] if align_stack else align
                 char_color = color_stack[-1] if color_stack else fill
@@ -264,8 +270,7 @@ class Text2Image:
                 char_bold = bold_stack[-1] if bold_stack else False
 
                 if char_align != last_align:
-                    lines.append(Line(chars, last_align))
-                    chars = []
+                    new_line()
                     last_align = char_align
                 for char in token_text:
                     font = get_proper_font(char, char_bold, char_font, fallback_fonts)
@@ -278,7 +283,7 @@ class Text2Image:
                     chars.append(Char(char, font, int(char_size), char_color))
 
         if chars:
-            lines.append(Line(chars, last_align))
+            new_line()
 
         return cls(lines, spacing)
 

@@ -77,6 +77,8 @@ def check_available_fonts():
         font = Font.find(fontname)
         if font:
             fallback_fonts_bold.append(font)
+    if not fallback_fonts_regular or not fallback_fonts_bold:
+        raise Exception("在当前字体列表中找不到可用的字体，请安装相应的字体或自定义字体列表")
 
 
 check_available_fonts()

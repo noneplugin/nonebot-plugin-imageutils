@@ -148,9 +148,9 @@ class BuildImage:
     def circle(self) -> "BuildImage":
         """将图片裁剪为圆形"""
         image = self.square()
-        mask = Image.new("L", self.size, 0)
+        mask = Image.new("L", image.size, 0)
         draw = ImageDraw.Draw(mask)
-        draw.ellipse((1, 1, self.size[0] - 2, self.size[1] - 2), 255)
+        draw.ellipse((1, 1, image.size[0] - 2, image.size[1] - 2), 255)
         mask = mask.filter(ImageFilter.GaussianBlur(0))
         image.image.putalpha(mask)
         return image

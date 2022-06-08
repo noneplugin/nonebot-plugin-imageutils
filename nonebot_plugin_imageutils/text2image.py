@@ -6,14 +6,14 @@ from PIL.ImageColor import colormap
 from typing import List, Optional, Iterator
 
 from .types import *
-from .fonts import Font, get_proper_font, fallback_fonts_regular, fallback_fonts_bold
+from .fonts import Font, get_proper_font
 
 
 class Char:
     def __init__(
         self,
         char: str,
-        font: Font = fallback_fonts_regular[0],
+        font: Font,
         fontsize: int = 16,
         fill: ColorType = "black",
         stroke_width: int = 0,
@@ -96,19 +96,19 @@ class Line:
     @property
     def height(self) -> int:
         if not self.chars:
-            return Char("A", fontsize=self.fontsize).height
+            return Char("A", get_proper_font("A"), fontsize=self.fontsize).height
         return max([char.height for char in self.chars])
 
     @property
     def ascent(self) -> int:
         if not self.chars:
-            return Char("A", fontsize=self.fontsize).ascent
+            return Char("A", get_proper_font("A"), fontsize=self.fontsize).ascent
         return max([char.ascent for char in self.chars])
 
     @property
     def descent(self) -> int:
         if not self.chars:
-            return Char("A", fontsize=self.fontsize).descent
+            return Char("A", get_proper_font("A"), fontsize=self.fontsize).descent
         return max([char.descent for char in self.chars])
 
     def wrap(self, width: float) -> Iterator["Line"]:
@@ -130,7 +130,8 @@ class Text2Image:
         cls,
         text: str,
         fontsize: int,
-        bold: bool = False,
+        style: FontStyle = "normal",
+        weight: FontWeight = "normal",
         fill: ColorType = "black",
         spacing: int = 4,
         align: HAlignType = "left",
@@ -145,7 +146,8 @@ class Text2Image:
         :参数:
           * ``text``: 文本
           * ``fontsize``: 字体大小
-          * ``bold``: 是否加粗
+          * ``style``: 字体样式，默认为 "normal"
+          * ``weight``: 字体粗细，默认为 "normal"
           * ``fill``: 文字颜色
           * ``spacing``: 多行文字间距
           * ``align``: 多行文字对齐方式，默认为靠左
@@ -162,9 +164,7 @@ class Text2Image:
                 lines.append(Line(chars, align))
                 chars = []
                 continue
-            font = get_proper_font(char, bold, fontname, fallback_fonts)
-            if not font:
-                font = fallback_fonts_bold[0] if bold else fallback_fonts_regular[0]
+            font = get_proper_font(char, style, weight, fontname, fallback_fonts)
             chars.append(Char(char, font, fontsize, fill, stroke_width, stroke_fill))
         if chars:
             lines.append(Line(chars, align, fontsize))
@@ -214,7 +214,7 @@ class Text2Image:
         font_stack = []
         size_stack = []
         bold_stack = []
-        last_align = align
+        last_align: HAlignType = align
 
         align_pattern = r"left|right|center"
         colors = "|".join(colormap.keys())
@@ -272,16 +272,16 @@ class Text2Image:
                 char_bold = bold_stack[-1] if bold_stack else False
 
                 if char_align != last_align:
-                    new_line()
+                    if chars:
+                        new_line()
                     last_align = char_align
                 for char in token_text:
-                    font = get_proper_font(char, char_bold, char_font, fallback_fonts)
-                    if not font:
-                        font = (
-                            fallback_fonts_bold[0]
-                            if char_bold
-                            else fallback_fonts_regular[0]
-                        )
+                    font = get_proper_font(
+                        char,
+                        weight="bold" if char_bold else "normal",
+                        fontname=char_font,
+                        fallback_fonts=fallback_fonts,
+                    )
                     chars.append(Char(char, font, int(char_size), char_color))
 
         if chars:

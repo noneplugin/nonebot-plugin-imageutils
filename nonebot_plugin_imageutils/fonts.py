@@ -4,32 +4,53 @@ import shutil
 import traceback
 from pathlib import Path
 from PIL import ImageFont
+from functools import lru_cache
+from fontTools.ttLib import TTFont
+from collections import namedtuple
+from PIL.ImageFont import FreeTypeFont
+from matplotlib.ft2font import FT2Font
+from typing import List, Union, Optional, Set, Iterator
+from matplotlib.font_manager import FontManager, FontProperties
+
 from nonebot import get_driver
 from nonebot.log import logger
-from fontTools.ttLib import TTFont
-from PIL.ImageFont import FreeTypeFont
-from typing import List, Union, Optional, Set, Iterator
 
 from .config import Config
+from .types import *
 
 imageutils_config = Config.parse_obj(get_driver().config.dict())
 
-FONT_PATH = Path("data/fonts")
+FONT_PATH = imageutils_config.custom_font_path or Path("data/fonts")
 FONT_PATH.mkdir(parents=True, exist_ok=True)
 
-SPECIAL_FONTSIZES = {"AppleColorEmoji.ttf": 137, "NotoColorEmoji.ttf": 109}
+font_manager = FontManager()
 
 
 def local_fonts() -> Iterator[str]:
     for f in FONT_PATH.iterdir():
-        if f.is_file() and f.suffix in [".otf", ".ttf", ".ttc", ".fnt"]:
+        if f.is_file() and f.suffix in [".otf", ".ttf", ".ttc", ".afm"]:
             yield f.name
 
 
+def add_font_to_manager(path: Union[str, Path]):
+    try:
+        font_manager.addfont(path)
+    except OSError as exc:
+        logger.warning(f"Failed to open font file {path}: {exc}")
+    except Exception as exc:
+        logger.warning(f"Failed to extract font properties from {path}: {exc}")
+
+
+for fontname in local_fonts():
+    add_font_to_manager(FONT_PATH / fontname)
+
+
 class Font:
-    def __init__(self, fontname: str, fontpath: Path, valid_size: Optional[int] = None):
-        self.name = fontname
+    def __init__(self, family: str, fontpath: Path, valid_size: Optional[int] = None):
+        self.family = family
+        """字体族名字"""
         self.path = fontpath.resolve()
+        """字体文件路径"""
         self.valid_size = valid_size
         """某些字体不支持缩放，只能以特定的大小加载"""
         self._glyph_table: Set[int] = set()
@@ -38,22 +59,49 @@ class Font:
                 self._glyph_table.add(key)
 
     @classmethod
-    def find(cls, fontname: str) -> Optional["Font"]:
-        """查找插件路径和系统路径下该名称的字体"""
-        if fontname in local_fonts():
-            fontpath = FONT_PATH / fontname
-            return cls(fontname, fontpath)
-        try:
-            try:
-                fontsize = SPECIAL_FONTSIZES[fontname]
-                valid_size = fontsize
-            except KeyError:
-                fontsize = 10
-                valid_size = None
-            font = ImageFont.truetype(fontname, fontsize)
-            return cls(fontname, Path(str(font.path)), valid_size)
-        except OSError:
-            return None
+    @lru_cache()
+    def find(
+        cls, family: str, style: FontStyle = "normal", weight: FontWeight = "normal"
+    ) -> "Font":
+        """查找插件路径和系统路径下的字体"""
+        font = cls.find_special_font(family)
+        if font:
+            return font
+        filepath = font_manager.findfont(
+            FontProperties(family, style=style, weight=weight)  # type: ignore
+        )
+        font = FT2Font(filepath)
+        return cls(font.family_name, Path(font.fname))
+
+    @classmethod
+    def find_special_font(cls, family: str) -> Optional["Font"]:
+        """查找特殊字体，主要是不可缩放的emoji字体"""
+
+        SpecialFont = namedtuple("SpecialFont", ["family", "fontname", "valid_size"])
+        SPECIAL_FONTS = {
+            "Apple Color Emoji": SpecialFont(
+                "Apple Color Emoji", "AppleColorEmoji.ttf", 137
+            ),
+            "Noto Color Emoji": SpecialFont(
+                "Noto Color Emoji", "NotoColorEmoji.ttf", 109
+            ),
+        }
+
+        if family in SPECIAL_FONTS:
+            prop = SPECIAL_FONTS[family]
+            fontname = prop.fontname
+            valid_size = prop.valid_size
+            fontpath = None
+            if fontname in local_fonts():
+                fontpath = FONT_PATH / fontname
+            else:
+                try:
+                    font = ImageFont.truetype(fontname, valid_size)
+                    fontpath = Path(str(font.path))
+                except OSError:
+                    pass
+            if fontpath:
+                return cls(family, fontpath, valid_size)
 
     def load_font(self, fontsize: int) -> FreeTypeFont:
         """以指定大小加载字体"""
@@ -64,53 +112,35 @@ class Font:
         return ord(char) in self._glyph_table
 
 
-fallback_fonts_regular: List[Font] = []
-fallback_fonts_bold: List[Font] = []
-
-
-def check_available_fonts():
-    for fontname in imageutils_config.pil_fallback_fonts_regular:
-        font = Font.find(fontname)
-        if font:
-            fallback_fonts_regular.append(font)
-    for fontname in imageutils_config.pil_fallback_fonts_bold:
-        font = Font.find(fontname)
-        if font:
-            fallback_fonts_bold.append(font)
-    if not fallback_fonts_regular or not fallback_fonts_bold:
-        raise Exception("在当前字体列表中找不到可用的字体，请安装相应的字体或自定义字体列表")
-
-
-check_available_fonts()
-
-
 def get_proper_font(
     char: str,
-    bold: bool = False,
+    style: FontStyle = "normal",
+    weight: FontWeight = "normal",
     fontname: Optional[str] = None,
     fallback_fonts: List[str] = [],
-):
+) -> Font:
     """
     获取合适的字体，将依次检查备选字体是否支持想要的字符
 
     :参数:
         * ``char``: 字符
-        * ``bold``: 是否粗体
+        * ``style``: 字体样式，默认为 "normal"
+        * ``weight``: 字体粗细，默认为 "normal"
         * ``fontname``: 可选，指定首选字体
         * ``fallback_fonts``: 可选，指定备选字体
     """
+    fallback_fonts = fallback_fonts or imageutils_config.default_fallback_fonts
     if fontname:
-        font = Font.find(fontname)
-        if font and font.has_char(char):
-            return font
-    if fallback_fonts:
-        fonts = [Font.find(name) for name in fallback_fonts]
-        fonts = [font for font in fonts if font]
-    else:
-        fonts = fallback_fonts_bold if bold else fallback_fonts_regular
-    for font in fonts:
+        fallback_fonts.insert(0, fontname)
+
+    checked_fonts = []
+    for family in fallback_fonts:
+        font = Font.find(family, style, weight)
+        if font.family in checked_fonts:
+            continue
         if font.has_char(char):
             return font
+    return Font.find(fallback_fonts[0], style, weight)
 
 
 async def add_font(fontname: str, source: Union[str, Path]):
@@ -124,6 +154,7 @@ async def add_font(fontname: str, source: Union[str, Path]):
                 shutil.copyfile(source, fontpath)
         else:
             await download_font(source, fontpath)
+        add_font_to_manager(fontpath)
     except:
         logger.warning(
             f"Add font {fontname} from {source} failed\n{traceback.format_exc()}"

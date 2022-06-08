@@ -32,7 +32,7 @@ class BuildImage:
 
     @property
     def mode(self) -> ModeType:
-        return self.image.mode
+        return self.image.mode  # type: ignore
 
     @property
     def draw(self) -> Draw:
@@ -427,7 +427,8 @@ class BuildImage:
         max_fontsize: int = 30,
         min_fontsize: int = 12,
         allow_wrap: bool = False,
-        bold: bool = False,
+        style: FontStyle = "normal",
+        weight: FontWeight = "normal",
         fill: ColorType = "black",
         spacing: int = 4,
         halign: HAlignType = "center",
@@ -447,7 +448,8 @@ class BuildImage:
           * ``max_fontsize``: 允许的最大字体大小
           * ``min_fontsize``: 允许的最小字体大小
           * ``allow_wrap``: 是否允许折行
-          * ``bold``: 是否加粗
+          * ``style``: 字体样式，默认为 "normal"
+          * ``weight``: 字体粗细，默认为 "normal"
           * ``fill``: 文字颜色
           * ``spacing``: 多行文字间距
           * ``halign``: 横向对齐方式，默认为居中
@@ -468,7 +470,8 @@ class BuildImage:
             text2img = Text2Image.from_text(
                 text,
                 fontsize,
-                bold,
+                style,
+                weight,
                 fill,
                 spacing,
                 lines_align,

@@ -30,11 +30,18 @@ pip install nonebot_plugin_imageutils
 
 对于 `Ubuntu` 系统，建议安装 `fonts-noto` 软件包 以支持中文字体和 emoji
 
-默认备选字体列表可在 `nonebot_plugin_imageutils/config.py` 中查看
+默认备选字体列表如下：
+```
+"Arial", "Tahoma", "Helvetica Neue", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK JP", "WenQuanYi Micro Hei", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+```
 
-可在 `.env` 文件中添加相应的变量来自定义备选字体
+可在 `.env.*` 文件中添加 `default_fallback_fonts` 变量 来自定义备选字体
 
-字体文件需要在系统目录下，或放置于机器人运行目录下的 `data/fonts/` 文件夹中
+字体文件需要在系统目录下，或放置于自定义字体路径中
+
+自定义字体路径默认为机器人运行目录下的 `data/fonts/` 文件夹，
+
+可在 `.env.*` 文件中添加 `custom_font_path` 变量 自定义字体路径
 
 其他插件可以通过 `nonebot_plugin_imageutils/fonts.py` 中的 `add_font` 函数往字体文件夹中添加字体
 

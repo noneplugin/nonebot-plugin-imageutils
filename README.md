@@ -28,11 +28,19 @@ pip install nonebot_plugin_imageutils
 
 本插件选择了一些不同系统上的字体，以支持更多的字符
 
-对于 `Ubuntu` 系统，建议安装 `fonts-noto` 软件包 以支持中文字体和 emoji
+> 对于 `Ubuntu` 系统，建议安装 `fonts-noto` 软件包 以支持中文字体和 emoji
+>
+> 并将简体中文设置为默认语言：（否则会有部分中文显示为异体（日文）字形，详见 [ArchWiki](https://wiki.archlinux.org/title/Localization_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)/Simplified_Chinese_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87)#%E4%BF%AE%E6%AD%A3%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87%E6%98%BE%E7%A4%BA%E4%B8%BA%E5%BC%82%E4%BD%93%EF%BC%88%E6%97%A5%E6%96%87%EF%BC%89%E5%AD%97%E5%BD%A2)）
+> ```bash
+> sudo apt install fonts-noto
+> sudo locale-gen zh_CN zh_CN.UTF-8
+> sudo update-locale LC_ALL=zh_CN.UTF-8 LANG=zh_CN.UTF-8
+> fc-cache -fv
+> ```
 
 默认备选字体列表如下：
 ```
-"Arial", "Tahoma", "Helvetica Neue", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans CJK JP", "WenQuanYi Micro Hei", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
+"Arial", "Tahoma", "Helvetica Neue", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", "Noto Sans CJK JP", "WenQuanYi Micro Hei", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
 ```
 
 可在 `.env.*` 文件中添加 `default_fallback_fonts` 变量 来自定义备选字体

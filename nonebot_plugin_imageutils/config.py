@@ -14,6 +14,7 @@ class Config(BaseModel, extra=Extra.ignore):
         "Hiragino Sans GB",
         "Microsoft YaHei",
         "Source Han Sans SC",
+        "Noto Sans SC",
         "Noto Sans CJK JP",
         "WenQuanYi Micro Hei",
         "Apple Color Emoji",

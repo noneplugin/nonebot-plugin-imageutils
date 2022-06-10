@@ -61,14 +61,19 @@ class Font:
     @classmethod
     @lru_cache()
     def find(
-        cls, family: str, style: FontStyle = "normal", weight: FontWeight = "normal"
+        cls,
+        family: str,
+        style: FontStyle = "normal",
+        weight: FontWeight = "normal",
+        fallback_to_default: bool = True,
     ) -> "Font":
         """查找插件路径和系统路径下的字体"""
         font = cls.find_special_font(family)
         if font:
             return font
         filepath = font_manager.findfont(
-            FontProperties(family, style=style, weight=weight)  # type: ignore
+            FontProperties(family, style=style, weight=weight),  # type: ignore
+            fallback_to_default=fallback_to_default,
         )
         font = FT2Font(filepath)
         return cls(font.family_name, Path(font.fname))
@@ -112,6 +117,9 @@ class Font:
         return ord(char) in self._glyph_table
 
 
+default_fallback_fonts = imageutils_config.default_fallback_fonts
+
+
 def get_proper_font(
     char: str,
     style: FontStyle = "normal",
@@ -129,14 +137,19 @@ def get_proper_font(
         * ``fontname``: 可选，指定首选字体
         * ``fallback_fonts``: 可选，指定备选字体
     """
-    fallback_fonts = fallback_fonts or imageutils_config.default_fallback_fonts
+    fallback_fonts = fallback_fonts or default_fallback_fonts
     if fontname:
         fallback_fonts.insert(0, fontname)
 
-    checked_fonts = []
     for family in fallback_fonts:
-        font = Font.find(family, style, weight)
-        if font.family in checked_fonts:
+        try:
+            font = Font.find(family, style, weight, fallback_to_default=False)
+        except ValueError as e:
+            logger.info(str(e))
+            try:
+                default_fallback_fonts.remove(family)
+            except:
+                pass
             continue
         if font.has_char(char):
             return font

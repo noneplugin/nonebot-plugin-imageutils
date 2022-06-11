@@ -73,12 +73,36 @@ class Font:
         font = cls.find_special_font(family)
         if font:
             return font
+        font = cls.find_local_font(family)
+        if font:
+            return font
+        font = cls.find_pil_font(family)
+        if font:
+            return font
         filepath = font_manager.findfont(
             FontProperties(family, style=style, weight=weight),  # type: ignore
             fallback_to_default=fallback_to_default,
         )
         font = FT2Font(filepath)
         return cls(font.family_name, Path(font.fname))
+
+    @classmethod
+    def find_local_font(cls, name: str) -> Optional["Font"]:
+        """查找插件路径下的字体"""
+        for fontname in local_fonts():
+            if name == fontname or name == fontname.split(".")[0]:
+                fontpath = FONT_PATH / fontname
+                return cls(fontname, fontpath)
+
+    @classmethod
+    def find_pil_font(cls, name: str) -> Optional["Font"]:
+        """通过 PIL ImageFont 查找系统字体"""
+        try:
+            font = ImageFont.truetype(name, 20)
+            fontpath = Path(str(font.path))
+            return cls(name, fontpath)
+        except OSError:
+            pass
 
     @classmethod
     def find_special_font(cls, family: str) -> Optional["Font"]:

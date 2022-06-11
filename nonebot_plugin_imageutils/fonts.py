@@ -34,6 +34,8 @@ def local_fonts() -> Iterator[str]:
 
 def add_font_to_manager(path: Union[str, Path]):
     try:
+        if isinstance(path, Path):
+            path = str(path.resolve())
         font_manager.addfont(path)
     except OSError as exc:
         logger.warning(f"Failed to open font file {path}: {exc}")
@@ -137,7 +139,7 @@ def get_proper_font(
         * ``fontname``: 可选，指定首选字体
         * ``fallback_fonts``: 可选，指定备选字体
     """
-    fallback_fonts = fallback_fonts or default_fallback_fonts
+    fallback_fonts = fallback_fonts or default_fallback_fonts.copy()
     if fontname:
         fallback_fonts.insert(0, fontname)
 
@@ -172,24 +174,14 @@ async def add_font(fontname: str, source: Union[str, Path]):
         logger.warning(
             f"Add font {fontname} from {source} failed\n{traceback.format_exc()}"
         )
+        fontpath.unlink(missing_ok=True)
 
 
 async def download_font(url: str, fontpath: Path):
     """下载字体到插件路径"""
     async with httpx.AsyncClient() as client:
         async with client.stream("GET", url) as resp:
-            logger.info(f"Begin to download font from <u>{url}</u>")
-            total_size = int(resp.headers["Content-Length"])
-            downloaded_size = 0
+            logger.info(f"Begin to download font from {url}")
             async with await anyio.open_file(fontpath, "wb") as file:
                 async for chunk in resp.aiter_bytes():
-                    downloaded_size += await file.write(chunk)
-                    logger.trace(
-                        f"Download progress: {downloaded_size/total_size:.2%} "
-                        f"({downloaded_size}/{total_size} bytes)"
-                    )
-            if downloaded_size != total_size:
-                logger.warning(
-                    f"Downloaded size mismatch: {downloaded_size}/{total_size} bytes"
-                )
-                fontpath.unlink(missing_ok=True)
+                    await file.write(chunk)

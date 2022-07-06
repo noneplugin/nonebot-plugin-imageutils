@@ -159,6 +159,7 @@ class Text2Image:
         lines: List[Line] = []
         chars: List[Char] = []
 
+        text = "\n".join(text.splitlines())
         for char in text:
             if char == "\n":
                 lines.append(Line(chars, align))
@@ -229,6 +230,8 @@ class Text2Image:
         parser.add_formatter("font", None)
         parser.add_formatter("size", None)
         parser.add_formatter("b", None)
+
+        text = "\n".join(text.splitlines())
         tokens = parser.tokenize(text)
         for token_type, tag_name, tag_opts, token_text in tokens:
             if token_type == 1:

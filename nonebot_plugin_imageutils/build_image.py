@@ -1,4 +1,4 @@
-import cv2 as cv
+import cv2
 import numpy as np
 from io import BytesIO
 from typing import Type
@@ -289,11 +289,11 @@ class BuildImage:
         """
         if degree == 0:
             return self.copy()
-        matrix = cv.getRotationMatrix2D((degree / 2, degree / 2), angle + 45, 1)
+        matrix = cv2.getRotationMatrix2D((degree / 2, degree / 2), angle + 45, 1)
         kernel = np.diag(np.ones(degree))
-        kernel = cv.warpAffine(kernel, matrix, (degree, degree)) / degree
-        blurred = cv.filter2D(np.asarray(self.image), -1, kernel)
-        cv.normalize(blurred, blurred, 0, 255, cv.NORM_MINMAX)
+        kernel = cv2.warpAffine(kernel, matrix, (degree, degree)) / degree
+        blurred = cv2.filter2D(np.asarray(self.image), -1, kernel)
+        cv2.normalize(blurred, blurred, 0, 255, cv2.NORM_MINMAX)
         return BuildImage(Image.fromarray(np.array(blurred, dtype=np.uint8)))
 
     def distort(self, coefficients: DistortType) -> "BuildImage":
@@ -303,7 +303,7 @@ class BuildImage:
         :参数:
           * ``coefficients``: 畸变参数
         """
-        res = cv.undistort(
+        res = cv2.undistort(
             np.asarray(self.image),
             np.array([[100, 0, self.width / 2], [0, 100, self.height / 2], [0, 0, 1]]),
             np.asarray(coefficients),
@@ -320,8 +320,8 @@ class BuildImage:
         img = self.image.convert("RGB")
         w, h = img.size
         img_array = np.asarray(img)
-        img_gray = cv.cvtColor(img_array, cv.COLOR_RGB2GRAY)
-        img_hsl = cv.cvtColor(img_array, cv.COLOR_RGB2HLS)
+        img_gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        img_hsl = cv2.cvtColor(img_array, cv2.COLOR_RGB2HLS)
         img_new = np.zeros((h, w, 3), np.uint8)
 
         if isinstance(color, str):
@@ -339,11 +339,11 @@ class BuildImage:
                     int(value * b / rgb_sum),
                 ]
                 img_new[i, j] = new_color
-        img_new_hsl = cv.cvtColor(img_new, cv.COLOR_RGB2HLS)
+        img_new_hsl = cv2.cvtColor(img_new, cv2.COLOR_RGB2HLS)
         result = np.dstack(
             (img_new_hsl[:, :, 0], img_hsl[:, :, 1], img_new_hsl[:, :, 2])
         )
-        result = cv.cvtColor(result, cv.COLOR_HLS2RGB)
+        result = cv2.cvtColor(result, cv2.COLOR_HLS2RGB)
         return BuildImage(Image.fromarray(result))
 
     def draw_point(
@@ -436,6 +436,7 @@ class BuildImage:
         lines_align: HAlignType = "left",
         stroke_ratio: float = 0,
         stroke_fill: Optional[ColorType] = None,
+        font_fallback: bool = True,
         fontname: str = "",
         fallback_fonts: List[str] = [],
     ) -> "BuildImage":
@@ -457,6 +458,7 @@ class BuildImage:
           * ``lines_align``: 多行文字对齐方式，默认为靠左
           * ``stroke_ratio``: 文字描边的比例，即 描边宽度 / 字体大小
           * ``stroke_fill``: 描边颜色
+          * ``font_fallback``: 是否使用后备字体，默认为 `True`
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
         """
@@ -477,6 +479,7 @@ class BuildImage:
                 lines_align,
                 int(fontsize * stroke_ratio),
                 stroke_fill,
+                font_fallback,
                 fontname,
                 fallback_fonts,
             )

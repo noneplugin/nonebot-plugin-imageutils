@@ -134,10 +134,12 @@ class Font:
             if fontpath:
                 return cls(family, fontpath, valid_size)
 
+    @lru_cache()
     def load_font(self, fontsize: int) -> FreeTypeFont:
         """以指定大小加载字体"""
         return ImageFont.truetype(str(self.path), fontsize, encoding="utf-8")
 
+    @lru_cache()
     def has_char(self, char: str) -> bool:
         """检查字体是否支持某个字符"""
         return ord(char) in self._glyph_table
@@ -179,7 +181,9 @@ def get_proper_font(
             continue
         if font.has_char(char):
             return font
-    return Font.find(fallback_fonts[0], style, weight)
+
+    logger.warning(f"在当前字体列表中找不到可以显示字符“{char}”的字体")
+    return Font.find("serif", style, weight)
 
 
 async def add_font(fontname: str, source: Union[str, Path]):

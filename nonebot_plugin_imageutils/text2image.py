@@ -137,6 +137,7 @@ class Text2Image:
         align: HAlignType = "left",
         stroke_width: int = 0,
         stroke_fill: Optional[ColorType] = None,
+        font_fallback: bool = True,
         fontname: str = "",
         fallback_fonts: List[str] = [],
     ) -> "Text2Image":
@@ -153,9 +154,17 @@ class Text2Image:
           * ``align``: 多行文字对齐方式，默认为靠左
           * ``stroke_width``: 文字描边宽度
           * ``stroke_fill``: 描边颜色
+          * ``font_fallback``: 是否使用后备字体，默认为 `True`
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
         """
+
+        font = None
+        if not font_fallback:
+            if not fontname:
+                raise ValueError("`font_fallback` 为 `False` 时必须指定 `fontname`")
+            font = Font.find(fontname, fallback_to_default=False)
+
         lines: List[Line] = []
         chars: List[Char] = []
 
@@ -165,7 +174,10 @@ class Text2Image:
                 lines.append(Line(chars, align))
                 chars = []
                 continue
-            font = get_proper_font(char, style, weight, fontname, fallback_fonts)
+            if font_fallback:
+                font = get_proper_font(char, style, weight, fontname, fallback_fonts)
+            else:
+                assert font
             chars.append(Char(char, font, fontsize, fill, stroke_width, stroke_fill))
         if chars:
             lines.append(Line(chars, align, fontsize))
@@ -179,6 +191,7 @@ class Text2Image:
         fill: ColorType = "black",
         spacing: int = 6,
         align: HAlignType = "left",
+        font_fallback: bool = True,
         fontname: str = "",
         fallback_fonts: List[str] = [],
     ) -> "Text2Image":
@@ -198,9 +211,17 @@ class Text2Image:
           * ``fill``: 文字颜色，默认为 `black`
           * ``spacing``: 多行文字间距
           * ``align``: 多行文字对齐方式，默认为靠左
+          * ``font_fallback``: 是否使用后备字体，默认为 `True`
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
         """
+
+        font = None
+        if not font_fallback:
+            if not fontname:
+                raise ValueError("`font_fallback` 为 `False` 时必须指定 `fontname`")
+            font = Font.find(fontname, fallback_to_default=False)
+
         lines: List[Line] = []
         chars: List[Char] = []
 
@@ -279,12 +300,15 @@ class Text2Image:
                         new_line()
                     last_align = char_align
                 for char in token_text:
-                    font = get_proper_font(
-                        char,
-                        weight="bold" if char_bold else "normal",
-                        fontname=char_font,
-                        fallback_fonts=fallback_fonts,
-                    )
+                    if font_fallback:
+                        font = get_proper_font(
+                            char,
+                            weight="bold" if char_bold else "normal",
+                            fontname=char_font,
+                            fallback_fonts=fallback_fonts,
+                        )
+                    else:
+                        assert font
                     chars.append(Char(char, font, int(char_size), char_color))
 
         if chars:
@@ -349,6 +373,7 @@ def text2image(
     bg_color: ColorType = "white",
     padding: SizeType = (10, 10),
     max_width: Optional[int] = None,
+    font_fallback: bool = True,
     **kwargs,
 ) -> IMG:
     """
@@ -359,8 +384,9 @@ def text2image(
         * ``bg_color``: 图片背景颜色
         * ``padding``: 图片边距
         * ``max_width``: 图片最大宽度，不设置则不限宽度
+        * ``font_fallback``: 是否使用后备字体，默认为 `True`
     """
-    text2img = Text2Image.from_bbcode_text(text, **kwargs)
+    text2img = Text2Image.from_bbcode_text(text, font_fallback=font_fallback, **kwargs)
     if max_width:
         text2img.wrap(max_width)
     return text2img.to_image(bg_color, padding)

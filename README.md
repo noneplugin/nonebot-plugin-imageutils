@@ -76,6 +76,11 @@ from nonebot_plugin_imageutils import Text2Image
 
 # img: PIL.Image.Image
 img = Text2Image.from_text("@mnixry 🤗", 50).to_image()
+
+# 以上结果为 PIL 的 Image 格式，若要直接 MessageSegment 发送，可以转为 BytesIO
+output = BytesIO()
+img.save(output, format="png")
+await matcher.send(MessageSegment.image(output))
 ```
 
 ![2.png](https://s2.loli.net/2022/05/19/14EXViZQwcGUW5I.png)
@@ -88,6 +93,11 @@ from nonebot_plugin_imageutils import text2image
 
 # img: PIL.Image.Image
 img = text2image("N[size=40][color=red]o[/color][/size]neBo[size=30][color=blue]T[/color][/size]\n[align=center]太强啦[/align]")
+
+# 以上结果为 PIL 的 Image 格式，若要直接 MessageSegment 发送，可以转为 BytesIO
+output = BytesIO()
+img.save(output, format="png")
+await matcher.send(MessageSegment.image(output))
 ```
 
 ![3.png](https://s2.loli.net/2022/05/19/VZAXsKB2x65q7rl.png)

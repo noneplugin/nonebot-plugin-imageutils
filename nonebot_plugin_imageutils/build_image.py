@@ -514,10 +514,12 @@ class BuildImage:
         self.image.save(output, format, **params)
         return output
 
-    def save_jpg(self) -> BytesIO:
+    def save_jpg(self, bg_color: ColorType = "white") -> BytesIO:
         output = BytesIO()
-        image = self.image.convert("RGB")
-        image.save(output, format="jpeg")
+        img = Image.new("RGBA", self.size, bg_color)
+        img.paste(self.image, mask=self.image)
+        img = img.convert("RGB")
+        img.save(output, format="jpeg")
         return output
 
     def save_png(self) -> BytesIO:

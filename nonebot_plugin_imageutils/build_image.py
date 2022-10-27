@@ -509,6 +509,89 @@ class BuildImage:
                 self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
                 return self
 
+    def draw_bbcode_text(
+        self,
+        xy: XYType,
+        text: str,
+        max_fontsize: int = 30,
+        min_fontsize: int = 12,
+        allow_wrap: bool = False,
+        fill: ColorType = "black",
+        spacing: int = 4,
+        halign: HAlignType = "center",
+        valign: VAlignType = "center",
+        lines_align: HAlignType = "left",
+        stroke_ratio: float = 0,
+        stroke_fill: Optional[ColorType] = None,
+        font_fallback: bool = True,
+        fontname: str = "",
+        fallback_fonts: List[str] = [],
+    ) -> "BuildImage":
+        """
+        在图片上指定区域画文字
+
+        :参数:
+          * ``xy``: 文字区域，顺序依次为 左，上，右，下
+          * ``text``: 文字，支持多行
+          * ``max_fontsize``: 允许的最大字体大小
+          * ``min_fontsize``: 允许的最小字体大小
+          * ``allow_wrap``: 是否允许折行
+          * ``fill``: 文字颜色
+          * ``spacing``: 多行文字间距
+          * ``halign``: 横向对齐方式，默认为居中
+          * ``valign``: 纵向对齐方式，默认为居中
+          * ``lines_align``: 多行文字对齐方式，默认为靠左
+          * ``stroke_ratio``: 文字描边的比例，即 描边宽度 / 字体大小
+          * ``stroke_fill``: 描边颜色
+          * ``font_fallback``: 是否使用后备字体，默认为 `True`
+          * ``fontname``: 指定首选字体
+          * ``fallback_fonts``: 指定备选字体
+        """
+
+        left = xy[0]
+        top = xy[1]
+        width = xy[2] - xy[0]
+        height = xy[3] - xy[1]
+        fontsize = max_fontsize
+        while True:
+            text2img = Text2Image.from_bbcode_text(
+                text,
+                fontsize,
+                fill,
+                spacing,
+                lines_align,
+                stroke_ratio,
+                stroke_fill,
+                font_fallback,
+                fontname,
+                fallback_fonts,
+            )
+            text_w = text2img.width
+            text_h = text2img.height
+            if text_w > width and allow_wrap:
+                text2img.wrap(width)
+                text_w = text2img.width
+                text_h = text2img.height
+            if text_w > width or text_h > height:
+                fontsize -= 1
+                if fontsize < min_fontsize:
+                    raise ValueError("在指定的区域和字体大小范围内画不下这段文字")
+            else:
+                x = left  # "left"
+                if halign == "center":
+                    x += (width - text_w) / 2
+                elif halign == "right":
+                    x += width - text_w
+
+                y = top  # "top"
+                if valign == "center":
+                    y += (height - text_h) / 2
+                elif valign == "bottom":
+                    y += height - text_h
+
+                self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
+                return self
+
     def save(self, format: str, **params) -> BytesIO:
         output = BytesIO()
         self.image.save(output, format, **params)

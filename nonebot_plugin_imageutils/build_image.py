@@ -147,28 +147,23 @@ class BuildImage:
 
     def circle(self) -> "BuildImage":
         """将图片裁剪为圆形"""
-        image = self.square()
-        mask = Image.new("L", image.size, 0)
+        image = self.square().image.convert("RGBA")
+        mask = Image.new("L", (self.width * 10, self.height * 10), 0)
         draw = ImageDraw.Draw(mask)
-        draw.ellipse((1, 1, image.size[0] - 2, image.size[1] - 2), 255)
-        mask = mask.filter(ImageFilter.GaussianBlur(0))
-        image.image.putalpha(mask)
-        return image
+        draw.ellipse((0, 0, mask.width, mask.height), 255)
+        mask = mask.resize(self.size, Image.ANTIALIAS)
+        bg = Image.new("RGBA", self.size)
+        return BuildImage(Image.composite(image, bg, mask))
 
-    def circle_corner(self, r: int) -> "BuildImage":
+    def circle_corner(self, r: float) -> "BuildImage":
         """将图片裁剪为圆角矩形"""
-        image = self.convert("RGBA")
-        w, h = image.size
-        alpha = image.image.split()[-1]
-        circle = Image.new("L", (r * 2, r * 2), 0)  # 创建黑色方形
-        draw = ImageDraw.Draw(circle)
-        draw.ellipse((0, 0, r * 2, r * 2), fill=255)  # 黑色方形内切白色圆形
-        alpha.paste(circle.crop((0, 0, r, r)), (0, 0))  # 左上角
-        alpha.paste(circle.crop((r, 0, r * 2, r)), (w - r, 0))  # 右上角
-        alpha.paste(circle.crop((r, r, r * 2, r * 2)), (w - r, h - r))  # 右下角
-        alpha.paste(circle.crop((0, r, r, r * 2)), (0, h - r))  # 左下角
-        image.image.putalpha(alpha)
-        return image
+        image = self.image.convert("RGBA")
+        mask = Image.new("L", (self.width * 10, self.height * 10), 0)
+        draw = ImageDraw.Draw(mask)
+        draw.rounded_rectangle((0, 0, mask.width, mask.height), r * 10, fill=255)
+        mask = mask.resize(self.size, Image.ANTIALIAS)
+        bg = Image.new("RGBA", self.size)
+        return BuildImage(Image.composite(image, bg, mask))
 
     def crop(self, box: BoxType) -> "BuildImage":
         """裁剪图片"""
@@ -205,6 +200,16 @@ class BuildImage:
             new_img.paste(self.image, mask=self.image if self.mode == "RGBA" else None)
         self.image = new_img
         return self
+
+    def alpha_composite(
+        self,
+        img: Union[IMG, "BuildImage"],
+        dest: PosTypeInt = (0, 0),
+        source: Union[PosTypeInt, BoxType] = (0, 0),
+    ) -> "BuildImage":
+        if isinstance(img, BuildImage):
+            img = img.image
+        return BuildImage(self.image.alpha_composite(img, dest=dest, source=source))  # type: ignore
 
     def filter(self, filter: Union[Filter, Type[Filter]]) -> "BuildImage":
         """滤波"""

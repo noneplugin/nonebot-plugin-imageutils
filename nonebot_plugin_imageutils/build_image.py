@@ -1,14 +1,13 @@
 import cv2
 import numpy as np
 from io import BytesIO
-from typing import Type
 from pathlib import Path
+from PIL import Image, ImageDraw
 from PIL.ImageColor import getrgb
 from PIL.Image import Image as IMG
 from PIL.ImageFilter import Filter
-from typing import List, Union, Optional
 from PIL.ImageDraw import ImageDraw as Draw
-from PIL import Image, ImageDraw, ImageFilter
+from typing import List, Optional, Type, Union
 
 from .types import *
 from .text2image import Text2Image

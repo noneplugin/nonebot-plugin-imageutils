@@ -102,6 +102,14 @@ await matcher.send(MessageSegment.image(output))
 
 ![3.png](https://s2.loli.net/2022/05/19/VZAXsKB2x65q7rl.png)
 
+目前支持的 `BBCode` 标签：
+- `[align=left|right|center][/align]`: 文字对齐方式
+- `[color=#66CCFF|red|black][/color]`: 字体颜色
+- `[stroke=#66CCFF|red|black][/stroke]`: 描边颜色
+- `[font=msyh.ttc][/font]`: 文字字体
+- `[size=30][/size]`: 文字大小
+- `[b][/b]`: 文字加粗
+
 
 ### 特别感谢
 

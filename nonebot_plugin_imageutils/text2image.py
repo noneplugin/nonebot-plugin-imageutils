@@ -191,6 +191,8 @@ class Text2Image:
         fill: ColorType = "black",
         spacing: int = 6,
         align: HAlignType = "left",
+        stroke_ratio: float = 0,
+        stroke_fill: Optional[ColorType] = None,
         font_fallback: bool = True,
         fontname: str = "",
         fallback_fonts: List[str] = [],
@@ -201,6 +203,7 @@ class Text2Image:
         目前支持的 `BBCode` 标签：
           * ``[align=left|right|center][/align]``: 文字对齐方式
           * ``[color=#66CCFF|red|black][/color]``: 字体颜色
+          * ``[stroke=#66CCFF|red|black][/stroke]``: 描边颜色
           * ``[font=msyh.ttc][/font]``: 文字字体，需填写完整字体文件名
           * ``[size=30][/size]``: 文字大小
           * ``[b][/b]``: 文字加粗
@@ -211,6 +214,8 @@ class Text2Image:
           * ``fill``: 文字颜色，默认为 `black`
           * ``spacing``: 多行文字间距
           * ``align``: 多行文字对齐方式，默认为靠左
+          * ``stroke_ratio``: 文字描边的比例，即 描边宽度 / 字体大小
+          * ``stroke_fill``: 描边颜色
           * ``font_fallback``: 是否使用后备字体，默认为 `True`
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
@@ -233,6 +238,7 @@ class Text2Image:
 
         align_stack = []
         color_stack = []
+        stroke_stack = []
         font_stack = []
         size_stack = []
         bold_stack = []
@@ -241,6 +247,7 @@ class Text2Image:
         align_pattern = r"left|right|center"
         colors = "|".join(colormap.keys())
         color_pattern = rf"#[a-fA-F0-9]{{6}}|{colors}"
+        stroke_pattern = color_pattern
         font_pattern = r"\S+\.ttf|\S+\.ttc|\S+\.otf|\S+\.fnt"
         size_pattern = r"\d+"
 
@@ -248,6 +255,7 @@ class Text2Image:
         parser.recognized_tags = {}
         parser.add_formatter("align", None)
         parser.add_formatter("color", None)
+        parser.add_formatter("stroke", None)
         parser.add_formatter("font", None)
         parser.add_formatter("size", None)
         parser.add_formatter("b", None)
@@ -262,6 +270,9 @@ class Text2Image:
                 elif tag_name == "color":
                     if re.fullmatch(color_pattern, tag_opts["color"]):
                         color_stack.append(tag_opts["color"])
+                elif tag_name == "stroke":
+                    if re.fullmatch(stroke_pattern, tag_opts["stroke"]):
+                        stroke_stack.append(tag_opts["stroke"])
                 elif tag_name == "font":
                     if re.fullmatch(font_pattern, tag_opts["font"]):
                         font_stack.append(tag_opts["font"])
@@ -277,6 +288,9 @@ class Text2Image:
                 elif tag_name == "color":
                     if color_stack:
                         color_stack.pop()
+                elif tag_name == "stroke":
+                    if stroke_stack:
+                        stroke_stack.pop()
                 elif tag_name == "font":
                     if font_stack:
                         font_stack.pop()
@@ -291,6 +305,7 @@ class Text2Image:
             elif token_type == 4:
                 char_align = align_stack[-1] if align_stack else align
                 char_color = color_stack[-1] if color_stack else fill
+                char_stroke = stroke_stack[-1] if stroke_stack else stroke_fill
                 char_font = font_stack[-1] if font_stack else fontname
                 char_size = size_stack[-1] if size_stack else fontsize
                 char_bold = bold_stack[-1] if bold_stack else False
@@ -309,7 +324,16 @@ class Text2Image:
                         )
                     else:
                         assert font
-                    chars.append(Char(char, font, int(char_size), char_color))
+                    chars.append(
+                        Char(
+                            char,
+                            font,
+                            int(char_size),
+                            char_color,
+                            int(char_size * stroke_ratio),
+                            char_stroke,
+                        )
+                    )
 
         if chars:
             new_line()

@@ -608,19 +608,13 @@ class BuildImage:
         :参数:
           * ``bg_color``: 由 png 转为 jpg 时的背景颜色，默认为白色
         """
-        output = BytesIO()
         if self.mode == "RGBA":
-            img = Image.new("RGBA", self.size, bg_color)
-            img.paste(self.image, mask=self.image)
+            img = self.new("RGBA", self.size, bg_color)
+            img.paste(self.image, alpha=True)
         else:
-            img = self.image
-        img = img.convert("RGB")
-        img.save(output, format="jpeg")
-        return output
+            img = self
+        return img.convert("RGB").save("jpeg")
 
     def save_png(self) -> BytesIO:
         """保存图片为 png 格式"""
-        output = BytesIO()
-        image = self.image.convert("RGBA")
-        image.save(output, format="png")
-        return output
+        return self.convert("RGBA").save("png")

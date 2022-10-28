@@ -11,6 +11,7 @@ from typing import List, Optional, Type, Union
 
 from .types import *
 from .text2image import Text2Image
+from .gradient import ColorStop, Gradient
 
 
 class BuildImage:
@@ -253,35 +254,14 @@ class BuildImage:
             )
         )
 
-    def gradient_color(
-        self,
-        start_color: ColorType,
-        stop_color: ColorType,
-        direction: OrientType = "vertical",
-    ) -> "BuildImage":
+    def gradient_color(self, gradient: Gradient) -> "BuildImage":
         """
         渐变色
 
         :参数:
-          * ``start_color``: 起始颜色
-          * ``stop_color``: 终止颜色
-          * ``direction``: 渐变方向，"vertical"：从上到下；"horizontal"：从左到右
+          * ``gradient``: 渐变对象
         """
-        frame = Image.new("RGBA", self.size, start_color)
-        top = Image.new("RGBA", self.size, stop_color)
-        mask = Image.new("L", self.size)
-        mask_data = []
-        if direction == "vertical":
-            for y in range(self.height):
-                mask_data.extend([int(255 * (y / self.height))] * self.width)
-        else:
-            mask_line = []
-            for x in range(self.width):
-                mask_line.append(int(255 * (x / self.width)))
-            mask_data = mask_line * self.height
-        mask.putdata(mask_data)
-        frame.paste(top, mask=mask)
-        return BuildImage(frame)
+        return BuildImage(gradient.create_image(self.size))
 
     def motion_blur(self, angle: float = 0, degree: int = 0) -> "BuildImage":
         """

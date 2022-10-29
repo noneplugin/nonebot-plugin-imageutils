@@ -58,7 +58,7 @@ class LinearGradient(Gradient):
         x01 = x1 - x0
         y01 = y1 - y0
         d = x01**2 + y01**2
-        arr = np.zeros([w, h, 4], np.uint8)
+        arr = np.zeros([h, w, 4], np.uint8)
         if len(self.color_stops) == 1:
             arr[:, :, :] = self.color_stops[0].color
         elif self.color_stops:

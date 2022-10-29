@@ -97,7 +97,9 @@ class Line:
     def height(self) -> int:
         if not self.chars:
             return Char("A", get_proper_font("A"), fontsize=self.fontsize).height
-        return max([char.height for char in self.chars])
+        return max([char.ascent + char.stroke_width for char in self.chars]) + max(
+            [char.descent + char.stroke_width for char in self.chars]
+        )
 
     @property
     def ascent(self) -> int:
@@ -354,6 +356,8 @@ class Text2Image:
             sum([line.ascent for line in self.lines])
             + self.lines[-1].descent
             + self.spacing * (len(self.lines) - 1)
+            + max([char.stroke_width for char in self.lines[0].chars])
+            + max([char.stroke_width for char in self.lines[-1].chars])
         )
 
     def wrap(self, width: float) -> "Text2Image":

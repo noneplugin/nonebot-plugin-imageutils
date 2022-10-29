@@ -368,17 +368,28 @@ class Text2Image:
         return self
 
     def to_image(
-        self, bg_color: Optional[ColorType] = None, padding: SizeType = (0, 0)
+        self,
+        bg_color: Optional[ColorType] = None,
+        padding: Union[SizeType, BoxType] = (0, 0),
     ) -> IMG:
+        if len(padding) == 4:
+            padding_left, padding_top, padding_right, padding_bottom = padding
+        else:
+            padding_left = padding_right = padding[0]
+            padding_top = padding_bottom = padding[1]
+
         img = Image.new(
             "RGBA",
-            (int(self.width + padding[0] * 2), int(self.height + padding[1] * 2)),
+            (
+                self.width + padding_left + padding_right,
+                self.height + padding_top + padding_bottom,
+            ),
             bg_color,  # type: ignore
         )
 
-        top = padding[1]
+        top = padding_top
         for line in self.lines:
-            left = padding[0]  # "left"
+            left = padding_left
             if line.align == "center":
                 left += (self.width - line.width) / 2
             elif line.align == "right":
@@ -399,7 +410,7 @@ class Text2Image:
 def text2image(
     text: str,
     bg_color: ColorType = "white",
-    padding: SizeType = (10, 10),
+    padding: Union[SizeType, BoxType] = (10, 10),
     max_width: Optional[int] = None,
     font_fallback: bool = True,
     **kwargs,

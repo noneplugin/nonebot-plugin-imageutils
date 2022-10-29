@@ -12,7 +12,8 @@ class ColorStop:
     def __init__(self, stop: float, color: "ColorType"):
         self.stop = stop
         """介于 0.0 与 1.0 之间的值，表示渐变中开始与结束之间的位置"""
-        color = getrgb(color)
+        if isinstance(color, str):
+            color = getrgb(color)
         if len(color) == 3:
             color = (color[0], color[1], color[2], 255)
         self.color = color

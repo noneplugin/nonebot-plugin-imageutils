@@ -39,10 +39,10 @@ class Char:
 
         if self.font.valid_size:
             ratio = fontsize / self.font.valid_size
-            self.ascent *= ratio
-            self.descent *= ratio
-            self.width *= ratio
-            self.height *= ratio
+            self.ascent = round(self.ascent * ratio)
+            self.descent = round(self.descent * ratio)
+            self.width = round(self.width * ratio)
+            self.height = round(self.height * ratio)
 
     def draw_on(self, img: IMG, pos: PosTypeInt):
         if self.font.valid_size:

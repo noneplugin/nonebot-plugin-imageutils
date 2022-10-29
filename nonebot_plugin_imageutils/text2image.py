@@ -406,6 +406,24 @@ class Text2Image:
 
         return img
 
+    def draw_on_image(self, img: IMG, pos: PosTypeFloat):
+        top = pos[1]
+        for line in self.lines:
+            left = pos[0]
+            if line.align == "center":
+                left += (self.width - line.width) / 2
+            elif line.align == "right":
+                left += self.width - line.width
+
+            x = left
+            if line.chars:
+                x += line.chars[0].stroke_width
+            for char in line.chars:
+                y = top + line.ascent - char.ascent
+                char.draw_on(img, (int(x), int(y)))
+                x += char.width - char.stroke_width * 2
+            top += line.ascent + self.spacing
+
 
 def text2image(
     text: str,

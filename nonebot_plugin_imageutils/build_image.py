@@ -10,8 +10,8 @@ from PIL.ImageDraw import ImageDraw as Draw
 from typing import List, Optional, Type, Union
 
 from .types import *
+from .gradient import Gradient
 from .text2image import Text2Image
-from .gradient import ColorStop, Gradient
 
 
 class BuildImage:

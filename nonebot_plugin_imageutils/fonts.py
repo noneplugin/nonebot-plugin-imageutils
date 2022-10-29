@@ -12,21 +12,28 @@ from matplotlib.ft2font import FT2Font
 from typing import List, Union, Optional, Set, Iterator
 from matplotlib.font_manager import FontManager, FontProperties
 
-from nonebot import get_driver
-from nonebot.log import logger
-
-from .config import Config
 from .types import *
+from .config import Config
 
-imageutils_config = Config.parse_obj(get_driver().config.dict())
+try:
+    from nonebot import get_driver
+    from nonebot.log import logger
 
-FONT_PATH = imageutils_config.custom_font_path or Path("data/fonts")
-FONT_PATH.mkdir(parents=True, exist_ok=True)
+    imageutils_config = Config.parse_obj(get_driver().config.dict())
+except:
+    import loguru
+
+    logger = loguru.logger
+    imageutils_config = Config()
+
+FONT_PATH = imageutils_config.custom_font_path
 
 font_manager = FontManager()
 
 
 def local_fonts() -> Iterator[str]:
+    if not FONT_PATH.exists():
+        return
     for f in FONT_PATH.iterdir():
         if f.is_file() and f.suffix in [".otf", ".ttf", ".ttc", ".afm"]:
             yield f.name
@@ -191,6 +198,7 @@ async def add_font(fontname: str, source: Union[str, Path]):
     fontpath = FONT_PATH / fontname
     if fontpath.exists():
         return
+    FONT_PATH.mkdir(parents=True, exist_ok=True)
     try:
         if isinstance(source, Path):
             if source.is_file():

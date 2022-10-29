@@ -1,10 +1,10 @@
+from typing import List
 from pathlib import Path
-from typing import List, Optional
 from pydantic import BaseModel, Extra
 
 
 class Config(BaseModel, extra=Extra.ignore):
-    custom_font_path: Optional[Path] = None
+    custom_font_path: Path = Path("data/fonts")
     default_fallback_fonts: List[str] = [
         "Arial",
         "Tahoma",

@@ -206,7 +206,7 @@ class Text2Image:
           * ``[align=left|right|center][/align]``: 文字对齐方式
           * ``[color=#66CCFF|red|black][/color]``: 字体颜色
           * ``[stroke=#66CCFF|red|black][/stroke]``: 描边颜色
-          * ``[font=msyh.ttc][/font]``: 文字字体，需填写完整字体文件名
+          * ``[font=msyh.ttc][/font]``: 文字字体
           * ``[size=30][/size]``: 文字大小
           * ``[b][/b]``: 文字加粗
 
@@ -238,19 +238,19 @@ class Text2Image:
             lines.append(Line(chars, last_align, fontsize))
             chars = []
 
-        align_stack = []
-        color_stack = []
-        stroke_stack = []
-        font_stack = []
-        size_stack = []
-        bold_stack = []
+        align_stack: List[HAlignType] = []
+        color_stack: List[ColorType] = []
+        stroke_stack: List[ColorType] = []
+        font_stack: List[str] = []
+        size_stack: List[int] = []
+        bold_stack: List[bool] = []
         last_align: HAlignType = align
 
         align_pattern = r"left|right|center"
         colors = "|".join(colormap.keys())
         color_pattern = rf"#[a-fA-F0-9]{{6}}|{colors}"
         stroke_pattern = color_pattern
-        font_pattern = r"\S+\.ttf|\S+\.ttc|\S+\.otf|\S+\.fnt"
+        font_pattern = r".+"
         size_pattern = r"\d+"
 
         parser = Parser()
@@ -280,7 +280,7 @@ class Text2Image:
                         font_stack.append(tag_opts["font"])
                 elif tag_name == "size":
                     if re.fullmatch(size_pattern, tag_opts["size"]):
-                        size_stack.append(tag_opts["size"])
+                        size_stack.append(int(tag_opts["size"]))
                 elif tag_name == "b":
                     bold_stack.append(True)
             elif token_type == 2:

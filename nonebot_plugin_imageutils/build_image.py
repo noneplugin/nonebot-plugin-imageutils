@@ -148,21 +148,21 @@ class BuildImage:
     def circle(self) -> "BuildImage":
         """将图片裁剪为圆形"""
         image = self.square().image.convert("RGBA")
-        mask = Image.new("L", (self.width * 10, self.height * 10), 0)
+        mask = Image.new("L", (image.width * 10, image.height * 10), 0)
         draw = ImageDraw.Draw(mask)
         draw.ellipse((0, 0, mask.width, mask.height), 255)
-        mask = mask.resize(self.size, Image.ANTIALIAS)
-        bg = Image.new("RGBA", self.size)
+        mask = mask.resize(image.size, Image.ANTIALIAS)
+        bg = Image.new("RGBA", image.size)
         return BuildImage(Image.composite(image, bg, mask))
 
     def circle_corner(self, r: float) -> "BuildImage":
         """将图片裁剪为圆角矩形"""
         image = self.image.convert("RGBA")
-        mask = Image.new("L", (self.width * 10, self.height * 10), 0)
+        mask = Image.new("L", (image.width * 10, image.height * 10), 0)
         draw = ImageDraw.Draw(mask)
         draw.rounded_rectangle((0, 0, mask.width, mask.height), r * 10, fill=255)
-        mask = mask.resize(self.size, Image.ANTIALIAS)
-        bg = Image.new("RGBA", self.size)
+        mask = mask.resize(image.size, Image.ANTIALIAS)
+        bg = Image.new("RGBA", image.size)
         return BuildImage(Image.composite(image, bg, mask))
 
     def crop(self, box: BoxType) -> "BuildImage":

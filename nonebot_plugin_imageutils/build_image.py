@@ -317,11 +317,15 @@ class BuildImage:
         for i in range(h):
             for j in range(w):
                 value = img_gray[i, j]
-                new_color = [
-                    int(value * r / rgb_sum),
-                    int(value * g / rgb_sum),
-                    int(value * b / rgb_sum),
-                ]
+                new_color = (
+                    [
+                        int(value * r / rgb_sum),
+                        int(value * g / rgb_sum),
+                        int(value * b / rgb_sum),
+                    ]
+                    if rgb_sum
+                    else [0, 0, 0]
+                )
                 img_new[i, j] = new_color
         img_new_hsl = cv2.cvtColor(img_new, cv2.COLOR_RGB2HLS)
         result = np.dstack(
@@ -490,7 +494,7 @@ class BuildImage:
                 elif valign == "bottom":
                     y += height - text_h
 
-                self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
+                text2img.draw_on_image(self.image, (int(x), int(y)))
                 return self
 
     def draw_bbcode_text(

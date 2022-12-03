@@ -113,6 +113,12 @@ class Line:
             return Char("A", get_proper_font("A"), fontsize=self.fontsize).descent
         return max([char.descent for char in self.chars])
 
+    @property
+    def max_stroke_width(self) -> int:
+        if not self.chars:
+            return 0
+        return max([char.stroke_width for char in self.chars])
+
     def wrap(self, width: float) -> Iterator["Line"]:
         last_idx = 0
         for idx in range(len(self.chars)):
@@ -356,8 +362,8 @@ class Text2Image:
             sum([line.ascent for line in self.lines])
             + self.lines[-1].descent
             + self.spacing * (len(self.lines) - 1)
-            + max([char.stroke_width for char in self.lines[0].chars])
-            + max([char.stroke_width for char in self.lines[-1].chars])
+            + self.lines[0].max_stroke_width
+            + self.lines[-1].max_stroke_width
         )
 
     def wrap(self, width: float) -> "Text2Image":

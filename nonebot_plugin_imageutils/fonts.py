@@ -118,7 +118,7 @@ class Font:
         SpecialFont = namedtuple("SpecialFont", ["family", "fontname", "valid_size"])
         SPECIAL_FONTS = {
             "Apple Color Emoji": SpecialFont(
-                "Apple Color Emoji", "AppleColorEmoji.ttf", 137
+                "Apple Color Emoji", "Apple Color Emoji.ttc", 160
             ),
             "Noto Color Emoji": SpecialFont(
                 "Noto Color Emoji", "NotoColorEmoji.ttf", 109

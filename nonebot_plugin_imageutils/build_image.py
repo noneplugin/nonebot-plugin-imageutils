@@ -45,7 +45,7 @@ class BuildImage:
         return cls(Image.new(mode, size, color))  # type: ignore
 
     @classmethod
-    def open(cls, file: Union[str, bytes, BytesIO, Path]) -> "BuildImage":
+    def open(cls, file: Union[str, BytesIO, Path]) -> "BuildImage":
         return cls(Image.open(file))
 
     def copy(self) -> "BuildImage":
@@ -59,7 +59,7 @@ class BuildImage:
         inside: bool = False,
         direction: DirectionType = "center",
         bg_color: Optional[ColorType] = None,
-        **kwargs
+        **kwargs,
     ) -> "BuildImage":
         """
         调整图片尺寸
@@ -87,7 +87,7 @@ class BuildImage:
         )
 
         if keep_ratio:
-            image = image.resize_canvas(size, direction, bg_color, **kwargs)
+            image = image.resize_canvas(size, direction, bg_color)
         return image
 
     def resize_canvas(
@@ -132,7 +132,7 @@ class BuildImage:
         angle: float,
         resample: ResampleType = Image.BICUBIC,
         expand: bool = False,
-        **kwargs
+        **kwargs,
     ) -> "BuildImage":
         """旋转图片"""
         image = BuildImage(
@@ -410,8 +410,10 @@ class BuildImage:
 
     def draw_text(
         self,
-        xy: XYType,
+        xy: Union[PosTypeFloat, XYType],
         text: str,
+        *,
+        fontsize: int = 16,
         max_fontsize: int = 30,
         min_fontsize: int = 12,
         allow_wrap: bool = False,
@@ -432,8 +434,9 @@ class BuildImage:
         在图片上指定区域画文字
 
         :参数:
-          * ``xy``: 文字区域，顺序依次为 左，上，右，下
+          * ``xy``: 文字位置或文字区域；传入 4 个参数时为文字区域，顺序依次为 左，上，右，下
           * ``text``: 文字，支持多行
+          * ``fontsize``: 字体大小
           * ``max_fontsize``: 允许的最大字体大小
           * ``min_fontsize``: 允许的最小字体大小
           * ``allow_wrap``: 是否允许折行
@@ -450,6 +453,22 @@ class BuildImage:
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
         """
+
+        if len(xy) == 2:
+            text2img = Text2Image.from_bbcode_text(
+                text,
+                fontsize,
+                fill,
+                spacing,
+                lines_align,
+                stroke_ratio,
+                stroke_fill,
+                font_fallback,
+                fontname,
+                fallback_fonts,
+            )
+            text2img.draw_on_image(self.image, xy)
+            return self
 
         left = xy[0]
         top = xy[1]
@@ -494,13 +513,15 @@ class BuildImage:
                 elif valign == "bottom":
                     y += height - text_h
 
-                text2img.draw_on_image(self.image, (int(x), int(y)))
+                text2img.draw_on_image(self.image, (x, y))
                 return self
 
     def draw_bbcode_text(
         self,
-        xy: XYType,
+        xy: Union[PosTypeFloat, XYType],
         text: str,
+        *,
+        fontsize: int = 16,
         max_fontsize: int = 30,
         min_fontsize: int = 12,
         allow_wrap: bool = False,
@@ -519,8 +540,9 @@ class BuildImage:
         在图片上指定区域画文字
 
         :参数:
-          * ``xy``: 文字区域，顺序依次为 左，上，右，下
+          * ``xy``: 文字位置或文字区域；传入 4 个参数时为文字区域，顺序依次为 左，上，右，下
           * ``text``: 文字，支持多行
+          * ``fontsize``: 字体大小
           * ``max_fontsize``: 允许的最大字体大小
           * ``min_fontsize``: 允许的最小字体大小
           * ``allow_wrap``: 是否允许折行
@@ -535,6 +557,22 @@ class BuildImage:
           * ``fontname``: 指定首选字体
           * ``fallback_fonts``: 指定备选字体
         """
+
+        if len(xy) == 2:
+            text2img = Text2Image.from_bbcode_text(
+                text,
+                fontsize,
+                fill,
+                spacing,
+                lines_align,
+                stroke_ratio,
+                stroke_fill,
+                font_fallback,
+                fontname,
+                fallback_fonts,
+            )
+            text2img.draw_on_image(self.image, xy)
+            return self
 
         left = xy[0]
         top = xy[1]
@@ -577,7 +615,7 @@ class BuildImage:
                 elif valign == "bottom":
                     y += height - text_h
 
-                self.paste(text2img.to_image(), (int(x), int(y)), alpha=True)
+                text2img.draw_on_image(self.image, (x, y))
                 return self
 
     def save(self, format: str, **params) -> BytesIO:

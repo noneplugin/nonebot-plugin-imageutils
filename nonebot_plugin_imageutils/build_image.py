@@ -408,6 +408,14 @@ class BuildImage:
         self.draw.ellipse(xy, fill, outline, width)
         return self
 
+    def face_detect(self, cascade_name):
+        img = np.asarray(self.image)
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_gray = cv2.equalizeHist(img_gray)
+        face_cascade = cv2.CascadeClassifier(cascade_name)
+        faces = face_cascade.detectMultiScale(img)
+        return faces
+
     def draw_text(
         self,
         xy: Union[PosTypeFloat, XYType],

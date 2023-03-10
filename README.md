@@ -1,5 +1,11 @@
 ## nonebot-plugin-imageutils
 
+> 本仓库将在一段时间后停止维护
+> 
+> 推荐使用 非NoneBot插件的版本 [pil-utils](https://github.com/MeetWq/pil-utils)
+> 
+> 非插件版除没有配置项外，与插件版功能基本一致
+
 
 ### 功能
 
